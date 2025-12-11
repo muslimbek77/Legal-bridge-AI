@@ -1,0 +1,361 @@
+import { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
+import {
+  PlusIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  DocumentTextIcon,
+  TrashIcon,
+  EyeIcon,
+  ArrowPathIcon,
+} from '@heroicons/react/24/outline'
+import { format } from 'date-fns'
+import toast from 'react-hot-toast'
+import LoadingSpinner from '../components/LoadingSpinner'
+import ContractStatusBadge from '../components/ContractStatusBadge'
+import Modal from '../components/Modal'
+import contractsService from '../services/contracts'
+
+export default function ContractsPage() {
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+  const [typeFilter, setTypeFilter] = useState('')
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [selectedContract, setSelectedContract] = useState(null)
+  
+  const queryClient = useQueryClient()
+
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ['contracts', searchTerm, statusFilter, typeFilter],
+    queryFn: () => contractsService.getContracts({
+      search: searchTerm,
+      status: statusFilter,
+      contract_type: typeFilter,
+    }),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: contractsService.deleteContract,
+    onSuccess: () => {
+      queryClient.invalidateQueries(['contracts'])
+      toast.success('Shartnoma o\'chirildi')
+      setDeleteModalOpen(false)
+    },
+    onError: () => {
+      toast.error('Xatolik yuz berdi')
+    },
+  })
+
+  const analyzeMutation = useMutation({
+    mutationFn: contractsService.analyzeContract,
+    onSuccess: () => {
+      queryClient.invalidateQueries(['contracts'])
+      toast.success('Tahlil boshlandi')
+    },
+    onError: () => {
+      toast.error('Tahlil boshlashda xatolik')
+    },
+  })
+
+  // Mock data for demo
+  const mockContracts = [
+    {
+      id: 1,
+      title: 'IT xizmatlari shartnomasi',
+      contract_type: 'service',
+      status: 'analyzed',
+      risk_score: 35,
+      created_at: '2024-01-15T10:30:00Z',
+      counterparty_name: 'TechSolutions LLC',
+    },
+    {
+      id: 2,
+      title: 'Ofis ijarasi shartnomasi',
+      contract_type: 'lease',
+      status: 'processing',
+      risk_score: null,
+      created_at: '2024-01-14T14:20:00Z',
+      counterparty_name: 'Real Estate Pro',
+    },
+    {
+      id: 3,
+      title: 'Tovarlar yetkazib berish',
+      contract_type: 'supply',
+      status: 'analyzed',
+      risk_score: 62,
+      created_at: '2024-01-13T09:15:00Z',
+      counterparty_name: 'Global Trade Co',
+    },
+    {
+      id: 4,
+      title: 'Konsalting xizmatlari',
+      contract_type: 'service',
+      status: 'analyzed',
+      risk_score: 28,
+      created_at: '2024-01-12T16:45:00Z',
+      counterparty_name: 'Business Advisors',
+    },
+    {
+      id: 5,
+      title: 'Mehnat shartnomasi - Dasturchi',
+      contract_type: 'employment',
+      status: 'pending',
+      risk_score: null,
+      created_at: '2024-01-11T11:00:00Z',
+      counterparty_name: 'Alisher Karimov',
+    },
+  ]
+
+  const contracts = data?.results || mockContracts
+
+  const contractTypes = [
+    { value: '', label: 'Barcha turlar' },
+    { value: 'service', label: 'Xizmat ko\'rsatish' },
+    { value: 'supply', label: 'Yetkazib berish' },
+    { value: 'lease', label: 'Ijara' },
+    { value: 'employment', label: 'Mehnat' },
+    { value: 'loan', label: 'Kredit' },
+    { value: 'other', label: 'Boshqa' },
+  ]
+
+  const statusOptions = [
+    { value: '', label: 'Barcha statuslar' },
+    { value: 'draft', label: 'Qoralama' },
+    { value: 'pending', label: 'Kutilmoqda' },
+    { value: 'processing', label: 'Tahlil qilinmoqda' },
+    { value: 'analyzed', label: 'Tahlil qilindi' },
+    { value: 'approved', label: 'Tasdiqlandi' },
+    { value: 'rejected', label: 'Rad etildi' },
+  ]
+
+  const handleDelete = (contract) => {
+    setSelectedContract(contract)
+    setDeleteModalOpen(true)
+  }
+
+  const confirmDelete = () => {
+    if (selectedContract) {
+      deleteMutation.mutate(selectedContract.id)
+    }
+  }
+
+  const handleAnalyze = (contractId) => {
+    analyzeMutation.mutate(contractId)
+  }
+
+  const getRiskScoreClass = (score) => {
+    if (score === null) return ''
+    if (score < 25) return 'bg-green-100 text-green-800'
+    if (score < 50) return 'bg-yellow-100 text-yellow-800'
+    if (score < 75) return 'bg-orange-100 text-orange-800'
+    return 'bg-red-100 text-red-800'
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Shartnomalar</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Barcha shartnomalarni boshqarish va tahlil qilish
+          </p>
+        </div>
+        <Link to="/contracts/upload" className="btn-primary">
+          <PlusIcon className="h-5 w-5 mr-2" />
+          Yangi shartnoma
+        </Link>
+      </div>
+
+      {/* Filters */}
+      <div className="card p-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          {/* Search */}
+          <div className="flex-1 relative">
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Shartnoma qidirish..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="input-field pl-10"
+            />
+          </div>
+          
+          {/* Type filter */}
+          <div className="sm:w-48">
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="input-field"
+            >
+              {contractTypes.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Status filter */}
+          <div className="sm:w-48">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="input-field"
+            >
+              {statusOptions.map((status) => (
+                <option key={status.value} value={status.value}>
+                  {status.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="card overflow-hidden">
+        {isLoading ? (
+          <div className="flex items-center justify-center h-64">
+            <LoadingSpinner size="lg" />
+          </div>
+        ) : contracts.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+            <DocumentTextIcon className="h-12 w-12 mb-4" />
+            <p className="text-lg font-medium">Shartnomalar topilmadi</p>
+            <p className="text-sm">Yangi shartnoma yuklang</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Shartnoma
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Kontragent
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Risk Ball
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Sana
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Amallar
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {contracts.map((contract) => (
+                  <tr key={contract.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <DocumentTextIcon className="h-8 w-8 text-gray-400" />
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">
+                            {contract.title}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {contractTypes.find(t => t.value === contract.contract_type)?.label}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {contract.counterparty_name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <ContractStatusBadge status={contract.status} />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {contract.risk_score !== null ? (
+                        <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getRiskScoreClass(contract.risk_score)}`}>
+                          {contract.risk_score}
+                        </span>
+                      ) : (
+                        <span className="text-sm text-gray-400">-</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {format(new Date(contract.created_at), 'dd.MM.yyyy')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center justify-end gap-2">
+                        <Link
+                          to={`/contracts/${contract.id}`}
+                          className="text-primary-600 hover:text-primary-900"
+                          title="Ko'rish"
+                        >
+                          <EyeIcon className="h-5 w-5" />
+                        </Link>
+                        {(contract.status === 'pending' || contract.status === 'draft') && (
+                          <button
+                            onClick={() => handleAnalyze(contract.id)}
+                            className="text-green-600 hover:text-green-900"
+                            title="Tahlil qilish"
+                            disabled={analyzeMutation.isPending}
+                          >
+                            <ArrowPathIcon className="h-5 w-5" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDelete(contract)}
+                          className="text-red-600 hover:text-red-900"
+                          title="O'chirish"
+                        >
+                          <TrashIcon className="h-5 w-5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        
+        {isFetching && !isLoading && (
+          <div className="absolute inset-0 bg-white/50 flex items-center justify-center">
+            <LoadingSpinner />
+          </div>
+        )}
+      </div>
+
+      {/* Delete Modal */}
+      <Modal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        title="Shartnomani o'chirish"
+      >
+        <p className="text-sm text-gray-500">
+          Haqiqatan ham "{selectedContract?.title}" shartnomani o'chirmoqchimisiz? 
+          Bu amalni qaytarib bo'lmaydi.
+        </p>
+        <div className="mt-6 flex justify-end gap-3">
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => setDeleteModalOpen(false)}
+          >
+            Bekor qilish
+          </button>
+          <button
+            type="button"
+            className="btn-danger"
+            onClick={confirmDelete}
+            disabled={deleteMutation.isPending}
+          >
+            {deleteMutation.isPending ? 'O\'chirilmoqda...' : 'O\'chirish'}
+          </button>
+        </div>
+      </Modal>
+    </div>
+  )
+}

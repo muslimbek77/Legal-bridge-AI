@@ -1,0 +1,72 @@
+# Django va asosiy kutubxonalar
+Django>=5.0
+djangorestframework>=3.14.0
+django-cors-headers>=4.3.0
+django-filter>=23.5
+django-environ>=0.11.0
+django-storages>=1.14.0
+
+# Database
+psycopg2-binary>=2.9.9
+redis>=5.0.0
+
+# Celery - asinxron vazifalar
+celery>=5.3.0
+django-celery-beat>=2.6.0
+django-celery-results>=2.5.0
+
+# Authentication
+djangorestframework-simplejwt>=5.3.0
+
+# Fayl ishlash
+python-docx==1.1.0
+PyPDF2==3.0.1
+pdfplumber==0.10.3
+pdf2image==1.16.3
+
+# OCR
+pytesseract==0.3.10
+# paddleocr>=2.7.0  # Optional - uncomment if needed
+# paddlepaddle>=2.6.0  # Optional - uncomment if needed
+
+# AI/ML
+langchain==0.1.0
+langchain-community==0.0.13
+langchain-core==0.1.10
+openai==1.6.1
+ollama==0.1.6
+
+# Embeddings va Vector Store
+sentence-transformers==2.2.2
+chromadb==0.4.22
+faiss-cpu>=1.8.0
+
+# NLP
+spacy==3.7.2
+nltk==3.8.1
+transformers==4.36.2
+
+# Yordamchi
+python-magic==0.4.27
+Pillow==10.2.0
+numpy==1.26.3
+pandas==2.1.4
+pydantic==2.5.3
+
+# API docs
+drf-spectacular==0.27.0
+
+# Testing
+pytest==7.4.4
+pytest-django==4.7.0
+pytest-cov==4.1.0
+factory-boy==3.3.0
+
+# Code quality
+black==23.12.1
+isort==5.13.2
+flake8==7.0.0
+
+# Production
+gunicorn==21.2.0
+whitenoise==6.6.0

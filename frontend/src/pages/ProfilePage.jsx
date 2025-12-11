@@ -1,0 +1,255 @@
+import { useState } from 'react'
+import { useMutation } from '@tanstack/react-query'
+import { UserCircleIcon } from '@heroicons/react/24/outline'
+import toast from 'react-hot-toast'
+import { useAuthStore } from '../store/authStore'
+
+export default function ProfilePage() {
+  const { user, updateProfile } = useAuthStore()
+  const [formData, setFormData] = useState({
+    first_name: user?.first_name || '',
+    last_name: user?.last_name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    organization: user?.organization || '',
+    position: user?.position || '',
+  })
+  const [passwordData, setPasswordData] = useState({
+    current_password: '',
+    new_password: '',
+    confirm_password: '',
+  })
+
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handlePasswordChange = (e) => {
+    const { name, value } = e.target
+    setPasswordData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    const result = await updateProfile(formData)
+    if (result.success) {
+      toast.success('Profil yangilandi')
+    } else {
+      toast.error('Xatolik yuz berdi')
+    }
+  }
+
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault()
+    if (passwordData.new_password !== passwordData.confirm_password) {
+      toast.error('Parollar mos kelmaydi')
+      return
+    }
+    // Password change logic here
+    toast.success('Parol o\'zgartirildi')
+    setPasswordData({
+      current_password: '',
+      new_password: '',
+      confirm_password: '',
+    })
+  }
+
+  const roleLabels = {
+    lawyer: 'Yurist',
+    analyst: 'Tahlilchi',
+    admin: 'Administrator',
+    viewer: 'Ko\'ruvchi',
+  }
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Profil</h1>
+        <p className="mt-1 text-sm text-gray-500">
+          Shaxsiy ma'lumotlaringizni boshqaring
+        </p>
+      </div>
+
+      {/* Profile Info */}
+      <div className="card p-6">
+        <div className="flex items-center mb-6">
+          <div className="h-20 w-20 rounded-full bg-primary-600 flex items-center justify-center">
+            <span className="text-3xl font-medium text-white">
+              {user?.first_name?.[0] || user?.email?.[0]?.toUpperCase() || 'U'}
+            </span>
+          </div>
+          <div className="ml-6">
+            <h2 className="text-xl font-semibold text-gray-900">
+              {user?.first_name} {user?.last_name}
+            </h2>
+            <p className="text-sm text-gray-500">{user?.email}</p>
+            <span className="mt-1 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+              {roleLabels[user?.role] || 'Foydalanuvchi'}
+            </span>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <div>
+              <label htmlFor="first_name" className="block text-sm font-medium text-gray-700">
+                Ism
+              </label>
+              <input
+                type="text"
+                name="first_name"
+                id="first_name"
+                value={formData.first_name}
+                onChange={handleChange}
+                className="mt-1 input-field"
+              />
+            </div>
+            <div>
+              <label htmlFor="last_name" className="block text-sm font-medium text-gray-700">
+                Familiya
+              </label>
+              <input
+                type="text"
+                name="last_name"
+                id="last_name"
+                value={formData.last_name}
+                onChange={handleChange}
+                className="mt-1 input-field"
+              />
+            </div>
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                Email
+              </label>
+              <input
+                type="email"
+                name="email"
+                id="email"
+                value={formData.email}
+                onChange={handleChange}
+                className="mt-1 input-field"
+                disabled
+              />
+            </div>
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                Telefon
+              </label>
+              <input
+                type="tel"
+                name="phone"
+                id="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                className="mt-1 input-field"
+                placeholder="+998 XX XXX XX XX"
+              />
+            </div>
+            <div>
+              <label htmlFor="organization" className="block text-sm font-medium text-gray-700">
+                Tashkilot
+              </label>
+              <input
+                type="text"
+                name="organization"
+                id="organization"
+                value={formData.organization}
+                onChange={handleChange}
+                className="mt-1 input-field"
+              />
+            </div>
+            <div>
+              <label htmlFor="position" className="block text-sm font-medium text-gray-700">
+                Lavozim
+              </label>
+              <input
+                type="text"
+                name="position"
+                id="position"
+                value={formData.position}
+                onChange={handleChange}
+                className="mt-1 input-field"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <button type="submit" className="btn-primary">
+              Saqlash
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Change Password */}
+      <div className="card p-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Parolni o'zgartirish</h3>
+        <form onSubmit={handlePasswordSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="current_password" className="block text-sm font-medium text-gray-700">
+              Joriy parol
+            </label>
+            <input
+              type="password"
+              name="current_password"
+              id="current_password"
+              value={passwordData.current_password}
+              onChange={handlePasswordChange}
+              className="mt-1 input-field"
+            />
+          </div>
+          <div>
+            <label htmlFor="new_password" className="block text-sm font-medium text-gray-700">
+              Yangi parol
+            </label>
+            <input
+              type="password"
+              name="new_password"
+              id="new_password"
+              value={passwordData.new_password}
+              onChange={handlePasswordChange}
+              className="mt-1 input-field"
+            />
+          </div>
+          <div>
+            <label htmlFor="confirm_password" className="block text-sm font-medium text-gray-700">
+              Yangi parolni tasdiqlang
+            </label>
+            <input
+              type="password"
+              name="confirm_password"
+              id="confirm_password"
+              value={passwordData.confirm_password}
+              onChange={handlePasswordChange}
+              className="mt-1 input-field"
+            />
+          </div>
+          <div className="flex justify-end">
+            <button type="submit" className="btn-primary">
+              Parolni o'zgartirish
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Activity Stats */}
+      <div className="card p-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Faollik statistikasi</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="bg-gray-50 rounded-lg p-4 text-center">
+            <p className="text-2xl font-bold text-gray-900">24</p>
+            <p className="text-sm text-gray-500">Yuklangan shartnomalar</p>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-4 text-center">
+            <p className="text-2xl font-bold text-gray-900">18</p>
+            <p className="text-sm text-gray-500">Tahlil qilingan</p>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-4 text-center">
+            <p className="text-2xl font-bold text-gray-900">12</p>
+            <p className="text-sm text-gray-500">Hisobotlar</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

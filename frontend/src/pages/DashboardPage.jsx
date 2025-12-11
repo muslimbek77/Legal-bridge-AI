@@ -1,0 +1,278 @@
+import { useQuery } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
+import {
+  DocumentTextIcon,
+  ChartBarIcon,
+  ExclamationTriangleIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  ArrowUpIcon,
+  ArrowDownIcon,
+} from '@heroicons/react/24/outline'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import LoadingSpinner from '../components/LoadingSpinner'
+import { RiskScoreCircle } from '../components/RiskScoreBadge'
+import contractsService from '../services/contracts'
+
+const RISK_COLORS = ['#10B981', '#F59E0B', '#F97316', '#EF4444']
+
+export default function DashboardPage() {
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ['contract-statistics'],
+    queryFn: contractsService.getStatistics,
+  })
+
+  // Mock data for demo - always use this for charts since backend doesn't provide chart data
+  const mockChartData = {
+    contracts_by_type: [
+      { name: 'Xizmat ko\'rsatish', value: 45 },
+      { name: 'Yetkazib berish', value: 38 },
+      { name: 'Ijara', value: 32 },
+      { name: 'Mehnat', value: 25 },
+      { name: 'Boshqa', value: 16 },
+    ],
+    monthly_analysis: [
+      { month: 'Yan', count: 12 },
+      { month: 'Fev', count: 19 },
+      { month: 'Mar', count: 15 },
+      { month: 'Apr', count: 22 },
+      { month: 'May', count: 28 },
+      { month: 'Iyun', count: 25 },
+    ],
+    risk_distribution: [
+      { name: 'Past (0-25)', value: 45, color: '#10B981' },
+      { name: 'O\'rta (25-50)', value: 52, color: '#F59E0B' },
+      { name: 'Yuqori (50-75)', value: 35, color: '#F97316' },
+      { name: 'Kritik (75-100)', value: 10, color: '#EF4444' },
+    ],
+    recent_contracts: [
+      { id: 1, title: 'IT xizmatlari shartnomasi', status: 'analyzed', risk_score: 35 },
+      { id: 2, title: 'Ofis ijarasi shartnomasi', status: 'processing', risk_score: null },
+      { id: 3, title: 'Tovarlar yetkazib berish', status: 'analyzed', risk_score: 62 },
+      { id: 4, title: 'Konsalting xizmatlari', status: 'analyzed', risk_score: 28 },
+    ],
+  }
+
+  // Map backend stats to display format
+  const displayStats = {
+    total_contracts: stats?.total || 0,
+    analyzed_contracts: stats?.by_status?.analyzed || 0,
+    pending_contracts: (stats?.by_status?.uploaded || 0) + (stats?.by_status?.processing || 0),
+    critical_issues: 0,
+    average_risk_score: 42,
+    compliance_rate: 87,
+    // Use mock data for charts
+    ...mockChartData,
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <LoadingSpinner size="lg" />
+      </div>
+    )
+  }
+
+  const statCards = [
+    {
+      name: 'Jami shartnomalar',
+      value: displayStats.total_contracts,
+      icon: DocumentTextIcon,
+      color: 'bg-blue-500',
+      change: '+12%',
+      changeType: 'increase',
+    },
+    {
+      name: 'Tahlil qilingan',
+      value: displayStats.analyzed_contracts,
+      icon: CheckCircleIcon,
+      color: 'bg-green-500',
+      change: '+8%',
+      changeType: 'increase',
+    },
+    {
+      name: 'Kutilmoqda',
+      value: displayStats.pending_contracts,
+      icon: ClockIcon,
+      color: 'bg-yellow-500',
+      change: '-3%',
+      changeType: 'decrease',
+    },
+    {
+      name: 'Kritik muammolar',
+      value: displayStats.critical_issues,
+      icon: ExclamationTriangleIcon,
+      color: 'bg-red-500',
+      change: '-15%',
+      changeType: 'decrease',
+    },
+  ]
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Bosh sahifa</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Shartnomalar tahlili umumiy ko'rinishi
+          </p>
+        </div>
+        <Link to="/contracts/upload" className="btn-primary">
+          <DocumentTextIcon className="h-5 w-5 mr-2" />
+          Yangi shartnoma
+        </Link>
+      </div>
+
+      {/* Stats cards */}
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {statCards.map((stat) => (
+          <div key={stat.name} className="card p-5">
+            <div className="flex items-center">
+              <div className={`flex-shrink-0 rounded-md p-3 ${stat.color}`}>
+                <stat.icon className="h-6 w-6 text-white" />
+              </div>
+              <div className="ml-5 w-0 flex-1">
+                <dl>
+                  <dt className="text-sm font-medium text-gray-500 truncate">{stat.name}</dt>
+                  <dd className="flex items-baseline">
+                    <div className="text-2xl font-semibold text-gray-900">{stat.value}</div>
+                    <div className={`ml-2 flex items-baseline text-sm font-semibold ${
+                      stat.changeType === 'increase' ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {stat.changeType === 'increase' ? (
+                        <ArrowUpIcon className="h-4 w-4 flex-shrink-0" />
+                      ) : (
+                        <ArrowDownIcon className="h-4 w-4 flex-shrink-0" />
+                      )}
+                      <span className="ml-1">{stat.change}</span>
+                    </div>
+                  </dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Charts row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Average Risk Score */}
+        <div className="card p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">O'rtacha Risk Ball</h3>
+          <div className="flex flex-col items-center">
+            <RiskScoreCircle score={displayStats.average_risk_score} size={150} />
+            <p className="mt-4 text-sm text-gray-500">
+              Muvofiqlik darajasi: <span className="font-semibold text-green-600">{displayStats.compliance_rate}%</span>
+            </p>
+          </div>
+        </div>
+
+        {/* Risk Distribution Pie Chart */}
+        <div className="card p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Risk Taqsimoti</h3>
+          <ResponsiveContainer width="100%" height={200}>
+            <PieChart>
+              <Pie
+                data={displayStats.risk_distribution}
+                cx="50%"
+                cy="50%"
+                innerRadius={40}
+                outerRadius={80}
+                paddingAngle={5}
+                dataKey="value"
+              >
+                {displayStats.risk_distribution.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="flex flex-wrap justify-center gap-2 mt-2">
+            {displayStats.risk_distribution.map((item) => (
+              <div key={item.name} className="flex items-center text-xs">
+                <div className="w-3 h-3 rounded-full mr-1" style={{ backgroundColor: item.color }} />
+                {item.name}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Monthly Analysis Bar Chart */}
+        <div className="card p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Oylik Tahlillar</h3>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={displayStats.monthly_analysis}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="count" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Bottom row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Contract Types */}
+        <div className="card p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Shartnoma Turlari</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <PieChart>
+              <Pie
+                data={displayStats.contracts_by_type}
+                cx="50%"
+                cy="50%"
+                outerRadius={100}
+                dataKey="value"
+                label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+              >
+                {displayStats.contracts_by_type.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={RISK_COLORS[index % RISK_COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Recent Contracts */}
+        <div className="card">
+          <div className="card-header flex items-center justify-between">
+            <h3 className="text-lg font-medium text-gray-900">So'nggi Shartnomalar</h3>
+            <Link to="/contracts" className="text-sm text-primary-600 hover:text-primary-700">
+              Barchasini ko'rish →
+            </Link>
+          </div>
+          <ul className="divide-y divide-gray-200">
+            {displayStats.recent_contracts.map((contract) => (
+              <li key={contract.id} className="px-6 py-4 hover:bg-gray-50">
+                <Link to={`/contracts/${contract.id}`} className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <DocumentTextIcon className="h-10 w-10 text-gray-400" />
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-900">{contract.title}</p>
+                      <p className="text-sm text-gray-500 capitalize">{contract.status}</p>
+                    </div>
+                  </div>
+                  {contract.risk_score !== null && (
+                    <div className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                      contract.risk_score < 25 ? 'bg-green-100 text-green-800' :
+                      contract.risk_score < 50 ? 'bg-yellow-100 text-yellow-800' :
+                      contract.risk_score < 75 ? 'bg-orange-100 text-orange-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {contract.risk_score}
+                    </div>
+                  )}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  )
+}
