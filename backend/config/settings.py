@@ -3,12 +3,18 @@ Django settings for Legal Bridge AI project.
 """
 
 import os
+import sys
 from pathlib import Path
 from datetime import timedelta
 import environ
 
 # Build paths inside the project
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Add ai_engine to Python path (it's in parent directory)
+AI_ENGINE_DIR = BASE_DIR.parent / 'ai_engine'
+if str(AI_ENGINE_DIR.parent) not in sys.path:
+    sys.path.insert(0, str(AI_ENGINE_DIR.parent))
 
 # Environment variables
 env = environ.Env(

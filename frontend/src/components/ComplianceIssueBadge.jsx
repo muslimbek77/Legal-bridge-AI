@@ -6,15 +6,30 @@ const severityConfig = {
     color: 'bg-red-100 text-red-800 border-red-200',
     icon: '🔴'
   },
+  high: { 
+    label: 'Yuqori', 
+    color: 'bg-orange-100 text-orange-800 border-orange-200',
+    icon: '🟠'
+  },
   major: { 
     label: 'Jiddiy', 
     color: 'bg-orange-100 text-orange-800 border-orange-200',
     icon: '🟠'
   },
+  medium: { 
+    label: 'O\'rta', 
+    color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+    icon: '🟡'
+  },
   minor: { 
     label: 'Kichik', 
     color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
     icon: '🟡'
+  },
+  low: { 
+    label: 'Past', 
+    color: 'bg-green-100 text-green-800 border-green-200',
+    icon: '🟢'
   },
   info: { 
     label: 'Ma\'lumot', 

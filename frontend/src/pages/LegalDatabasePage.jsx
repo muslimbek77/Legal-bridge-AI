@@ -28,118 +28,11 @@ export default function LegalDatabasePage() {
     enabled: activeTab === 'templates',
   })
 
-  // Mock data
-  const mockLaws = [
-    {
-      id: 1,
-      name: 'Fuqarolik Kodeksi',
-      code: 'FK',
-      category: 'civil',
-      effective_date: '1996-03-01',
-      description: 'O\'zbekiston Respublikasining asosiy fuqarolik qonunchiligi',
-      chapters_count: 78,
-      articles_count: 1150,
-    },
-    {
-      id: 2,
-      name: 'Mehnat Kodeksi',
-      code: 'MK',
-      category: 'labor',
-      effective_date: '1996-04-01',
-      description: 'Mehnat munosabatlarini tartibga soluvchi qonun',
-      chapters_count: 25,
-      articles_count: 450,
-    },
-    {
-      id: 3,
-      name: 'Soliq Kodeksi',
-      code: 'SK',
-      category: 'tax',
-      effective_date: '2020-01-01',
-      description: 'Soliq tizimi va soliqqa tortish qoidalari',
-      chapters_count: 32,
-      articles_count: 380,
-    },
-    {
-      id: 4,
-      name: 'Xo\'jalik protsessual Kodeksi',
-      code: 'XPK',
-      category: 'procedural',
-      effective_date: '2018-01-01',
-      description: 'Iqtisodiy sudlarda ishlarni ko\'rish tartibi',
-      chapters_count: 38,
-      articles_count: 320,
-    },
-    {
-      id: 5,
-      name: 'Ijara to\'g\'risida',
-      code: 'IQ',
-      category: 'civil',
-      effective_date: '1991-11-19',
-      description: 'Ijara munosabatlarini tartibga solish',
-      chapters_count: 6,
-      articles_count: 45,
-    },
-  ]
-
-  const mockTemplates = [
-    {
-      id: 1,
-      name: 'Xizmat ko\'rsatish shartnomasi',
-      contract_type: 'service',
-      language: 'uz_latin',
-      description: 'Standart xizmat ko\'rsatish shartnomasi namunasi',
-      downloads_count: 1245,
-    },
-    {
-      id: 2,
-      name: 'Yetkazib berish shartnomasi',
-      contract_type: 'supply',
-      language: 'uz_latin',
-      description: 'Tovarlar yetkazib berish shartnomasi namunasi',
-      downloads_count: 987,
-    },
-    {
-      id: 3,
-      name: 'Ijara shartnomasi',
-      contract_type: 'lease',
-      language: 'uz_latin',
-      description: 'Ko\'chmas mulk ijara shartnomasi namunasi',
-      downloads_count: 756,
-    },
-    {
-      id: 4,
-      name: 'Mehnat shartnomasi',
-      contract_type: 'employment',
-      language: 'uz_latin',
-      description: 'Xodim bilan mehnat shartnomasi namunasi',
-      downloads_count: 2134,
-    },
-  ]
-
-  const mockArticles = [
-    {
-      id: 1,
-      article_number: '333',
-      title: 'Majburiyatni bajarishdan ozod qiluvchi holatlar',
-      content: 'Agar majburiyatni bajarish majburiyat paydo bo\'lganidan keyin yuzaga kelgan fors-major holatlari (favqulodda va oldini olish mumkin bo\'lmagan holatlar) tufayli imkonsiz bo\'lsa, qarzdor majburiyatni bajarish uchun javobgar bo\'lmaydi.',
-    },
-    {
-      id: 2,
-      article_number: '260',
-      title: 'Neustoyka (jarima, penya)',
-      content: 'Neustoyka (jarima, penya) - bu majburiyat bajarilmagan yoki lozim darajada bajarilmagan taqdirda qarzdor kreditorga to\'lashi shart bo\'lgan qonun yoki shartnomada belgilangan pul summasi.',
-    },
-    {
-      id: 3,
-      article_number: '354',
-      title: 'Shartnomaning shakli',
-      content: 'Shartnoma og\'zaki yoki yozma shaklda tuzilishi mumkin. Shartnoma oddiy yozma yoki notarial shaklda tuzilishi mumkin.',
-    },
-  ]
-
-  const displayLaws = laws?.results || mockLaws
-  const displayTemplates = templates?.results || mockTemplates
+  // Haqiqiy ma'lumotlarni ishlatish
+  const lawsList = laws?.results || []
+  const templatesList = templates?.results || []
+  const hasLaws = lawsList.length > 0
+  const hasTemplates = templatesList.length > 0
 
   const handleDownloadTemplate = async (template) => {
     try {
@@ -228,9 +121,9 @@ export default function LegalDatabasePage() {
                 <div className="flex items-center justify-center h-64">
                   <LoadingSpinner />
                 </div>
-              ) : (
+              ) : hasLaws ? (
                 <ul className="divide-y divide-gray-200">
-                  {displayLaws.map((law) => (
+                  {lawsList.map((law) => (
                     <li key={law.id}>
                       <button
                         onClick={() => setSelectedLaw(law)}
@@ -247,6 +140,11 @@ export default function LegalDatabasePage() {
                     </li>
                   ))}
                 </ul>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                  <BookOpenIcon className="h-12 w-12 mb-3" />
+                  <p className="text-sm">Qonunlar bazasi bo'sh</p>
+                </div>
               )}
             </div>
           </div>
@@ -289,21 +187,10 @@ export default function LegalDatabasePage() {
                   <div className="card-header">
                     <h3 className="text-lg font-medium text-gray-900">Ko'p ishlatiladigan moddalar</h3>
                   </div>
-                  <ul className="divide-y divide-gray-200">
-                    {mockArticles.map((article) => (
-                      <li key={article.id} className="p-4">
-                        <div className="flex items-start">
-                          <span className="flex-shrink-0 w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold">
-                            {article.article_number}
-                          </span>
-                          <div className="ml-4">
-                            <h4 className="text-sm font-medium text-gray-900">{article.title}</h4>
-                            <p className="mt-1 text-sm text-gray-600 line-clamp-3">{article.content}</p>
-                          </div>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="p-6 text-center text-gray-500">
+                    <BookOpenIcon className="h-10 w-10 mx-auto mb-3 text-gray-400" />
+                    <p className="text-sm">Moddalar tez orada qo'shiladi</p>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -322,8 +209,8 @@ export default function LegalDatabasePage() {
             <div className="col-span-full flex items-center justify-center h-64">
               <LoadingSpinner size="lg" />
             </div>
-          ) : (
-            displayTemplates.map((template) => (
+          ) : hasTemplates ? (
+            templatesList.map((template) => (
               <div key={template.id} className="card p-6 hover:shadow-md transition-shadow">
                 <div className="flex items-start justify-between mb-4">
                   <DocumentTextIcon className="h-10 w-10 text-primary-500" />
@@ -348,6 +235,12 @@ export default function LegalDatabasePage() {
                 </div>
               </div>
             ))
+          ) : (
+            <div className="col-span-full flex flex-col items-center justify-center py-16 text-gray-400">
+              <DocumentTextIcon className="h-16 w-16 mb-4" />
+              <p className="text-lg font-medium text-gray-600">Shartnoma namunalari yo'q</p>
+              <p className="text-sm text-gray-500">Namunalar tez orada qo'shiladi</p>
+            </div>
           )}
         </div>
       )}

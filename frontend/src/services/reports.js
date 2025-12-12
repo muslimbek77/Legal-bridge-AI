@@ -15,8 +15,9 @@ export const reportsService = {
   
   // Generate report for contract
   generateReport: async (contractId, format = 'pdf') => {
-    const response = await api.post('/api/v1/reports/', {
-      contract: contractId,
+    const response = await api.post('/api/v1/reports/generate/', {
+      contract_id: contractId,
+      report_type: 'analysis',
       format,
     })
     return response.data

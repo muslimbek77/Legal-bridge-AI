@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
-import { UserCircleIcon } from '@heroicons/react/24/outline'
+import { useQuery, useMutation } from '@tanstack/react-query'
+import { UserCircleIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../store/authStore'
+import contractsService from '../services/contracts'
 
 export default function ProfilePage() {
   const { user, updateProfile } = useAuthStore()
@@ -19,6 +20,22 @@ export default function ProfilePage() {
     new_password: '',
     confirm_password: '',
   })
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
+  // Haqiqiy statistikani olish
+  const { data: stats } = useQuery({
+    queryKey: ['contract-statistics'],
+    queryFn: contractsService.getStatistics,
+  })
+
+  // Haqiqiy statistika qiymatlari
+  const activityStats = {
+    uploaded: stats?.total || 0,
+    analyzed: stats?.by_status?.analyzed || 0,
+    reports: 0, // Hisobotlar soni alohida API kerak
+  }
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -189,40 +206,79 @@ export default function ProfilePage() {
             <label htmlFor="current_password" className="block text-sm font-medium text-gray-700">
               Joriy parol
             </label>
-            <input
-              type="password"
-              name="current_password"
-              id="current_password"
-              value={passwordData.current_password}
-              onChange={handlePasswordChange}
-              className="mt-1 input-field"
-            />
+            <div className="mt-1 relative">
+              <input
+                type={showCurrentPassword ? 'text' : 'password'}
+                name="current_password"
+                id="current_password"
+                value={passwordData.current_password}
+                onChange={handlePasswordChange}
+                className="input-field pr-12"
+              />
+              <button
+                type="button"
+                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-primary-600 transition-colors duration-200"
+              >
+                {showCurrentPassword ? (
+                  <EyeSlashIcon className="h-5 w-5" />
+                ) : (
+                  <EyeIcon className="h-5 w-5" />
+                )}
+              </button>
+            </div>
           </div>
           <div>
             <label htmlFor="new_password" className="block text-sm font-medium text-gray-700">
               Yangi parol
             </label>
-            <input
-              type="password"
-              name="new_password"
-              id="new_password"
-              value={passwordData.new_password}
-              onChange={handlePasswordChange}
-              className="mt-1 input-field"
-            />
+            <div className="mt-1 relative">
+              <input
+                type={showNewPassword ? 'text' : 'password'}
+                name="new_password"
+                id="new_password"
+                value={passwordData.new_password}
+                onChange={handlePasswordChange}
+                className="input-field pr-12"
+              />
+              <button
+                type="button"
+                onClick={() => setShowNewPassword(!showNewPassword)}
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-primary-600 transition-colors duration-200"
+              >
+                {showNewPassword ? (
+                  <EyeSlashIcon className="h-5 w-5" />
+                ) : (
+                  <EyeIcon className="h-5 w-5" />
+                )}
+              </button>
+            </div>
           </div>
           <div>
             <label htmlFor="confirm_password" className="block text-sm font-medium text-gray-700">
               Yangi parolni tasdiqlang
             </label>
-            <input
-              type="password"
-              name="confirm_password"
-              id="confirm_password"
-              value={passwordData.confirm_password}
-              onChange={handlePasswordChange}
-              className="mt-1 input-field"
-            />
+            <div className="mt-1 relative">
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                name="confirm_password"
+                id="confirm_password"
+                value={passwordData.confirm_password}
+                onChange={handlePasswordChange}
+                className="input-field pr-12"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-primary-600 transition-colors duration-200"
+              >
+                {showConfirmPassword ? (
+                  <EyeSlashIcon className="h-5 w-5" />
+                ) : (
+                  <EyeIcon className="h-5 w-5" />
+                )}
+              </button>
+            </div>
           </div>
           <div className="flex justify-end">
             <button type="submit" className="btn-primary">
@@ -237,15 +293,15 @@ export default function ProfilePage() {
         <h3 className="text-lg font-medium text-gray-900 mb-4">Faollik statistikasi</h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-gray-50 rounded-lg p-4 text-center">
-            <p className="text-2xl font-bold text-gray-900">24</p>
+            <p className="text-2xl font-bold text-gray-900">{activityStats.uploaded}</p>
             <p className="text-sm text-gray-500">Yuklangan shartnomalar</p>
           </div>
           <div className="bg-gray-50 rounded-lg p-4 text-center">
-            <p className="text-2xl font-bold text-gray-900">18</p>
+            <p className="text-2xl font-bold text-gray-900">{activityStats.analyzed}</p>
             <p className="text-sm text-gray-500">Tahlil qilingan</p>
           </div>
           <div className="bg-gray-50 rounded-lg p-4 text-center">
-            <p className="text-2xl font-bold text-gray-900">12</p>
+            <p className="text-2xl font-bold text-gray-900">{activityStats.reports}</p>
             <p className="text-sm text-gray-500">Hisobotlar</p>
           </div>
         </div>

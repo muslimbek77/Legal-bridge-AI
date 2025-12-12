@@ -54,43 +54,9 @@ export default function ReportsPage() {
     },
   })
 
-  // Mock data
-  const mockReports = [
-    {
-      id: 1,
-      contract_title: 'IT xizmatlari shartnomasi',
-      format: 'pdf',
-      created_at: '2024-01-15T11:45:00Z',
-      file_size: 245678,
-      risk_score: 35,
-    },
-    {
-      id: 2,
-      contract_title: 'Yetkazib berish shartnomasi',
-      format: 'pdf',
-      created_at: '2024-01-14T14:30:00Z',
-      file_size: 312456,
-      risk_score: 62,
-    },
-    {
-      id: 3,
-      contract_title: 'Ijara shartnomasi',
-      format: 'docx',
-      created_at: '2024-01-13T10:20:00Z',
-      file_size: 189234,
-      risk_score: 28,
-    },
-    {
-      id: 4,
-      contract_title: 'Konsalting shartnomasi',
-      format: 'pdf',
-      created_at: '2024-01-12T16:50:00Z',
-      file_size: 278901,
-      risk_score: 45,
-    },
-  ]
-
-  const reports = data?.results || mockReports
+  // Haqiqiy ma'lumotlarni ishlatish
+  const reportsList = data?.results || []
+  const hasReports = reportsList.length > 0
 
   const formatFileSize = (bytes) => {
     if (bytes === 0) return '0 Bytes'
@@ -194,7 +160,7 @@ export default function ReportsPage() {
 
       {/* Reports Table */}
       <div className="card overflow-hidden">
-        {reports.length === 0 ? (
+        {!hasReports ? (
           <div className="flex flex-col items-center justify-center h-64 text-gray-500">
             <DocumentArrowDownIcon className="h-12 w-12 mb-4" />
             <p className="text-lg font-medium">Hisobotlar topilmadi</p>
@@ -226,7 +192,7 @@ export default function ReportsPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {reports.map((report) => (
+                {reportsList.map((report) => (
                   <tr key={report.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">

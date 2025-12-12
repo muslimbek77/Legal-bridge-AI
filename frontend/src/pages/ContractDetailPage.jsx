@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -9,6 +10,10 @@ import {
   CheckCircleIcon,
   InformationCircleIcon,
   ClockIcon,
+  ChevronDownIcon,
+  LanguageIcon,
+  ArrowTopRightOnSquareIcon,
+  ClipboardDocumentIcon,
 } from '@heroicons/react/24/outline'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
@@ -24,93 +29,26 @@ export default function ContractDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const [reportMenuOpen, setReportMenuOpen] = useState(false)
+  const [showMatnUz, setShowMatnUz] = useState(false)
+  const [textCopied, setTextCopied] = useState(false)
 
-  const { data: contract, isLoading: contractLoading } = useQuery({
+  const { data: contract, isLoading: contractLoading, error: contractError } = useQuery({
     queryKey: ['contract', id],
     queryFn: () => contractsService.getContract(id),
+    retry: 2,
   })
 
-  const { data: analysisData } = useQuery({
+  const { data: analysisData, refetch: refetchAnalysis } = useQuery({
     queryKey: ['contract-analysis', id],
     queryFn: () => analysisService.getAnalysisByContract(id),
-    enabled: !!contract && contract.status === 'analyzed',
+    enabled: !!contract && (contract.status === 'analyzed' || contract.status === 'processing'),
+    refetchInterval: contract?.status === 'processing' ? 3000 : false, // Poll while processing
   })
 
-  // Mock data for demo
-  const mockContract = {
-    id: 1,
-    title: 'IT xizmatlari shartnomasi',
-    contract_type: 'service',
-    status: 'analyzed',
-    language: 'uz_latin',
-    counterparty_name: 'TechSolutions LLC',
-    counterparty_inn: '123456789',
-    contract_number: '2024/001',
-    description: 'Dasturiy ta\'minot ishlab chiqish va texnik qo\'llab-quvvatlash xizmatlari',
-    created_at: '2024-01-15T10:30:00Z',
-    updated_at: '2024-01-15T11:45:00Z',
-    file: '/media/contracts/contract_001.pdf',
-    extracted_text: 'Shartnoma matni...',
-  }
-
-  const mockAnalysis = {
-    id: 1,
-    risk_score: 35,
-    compliance_score: 87,
-    summary: 'Shartnoma umumiy jihatdan O\'zbekiston qonunchiligiga mos keladi. Bir nechta kichik muammolar aniqlandi.',
-    processing_time: 45.2,
-    created_at: '2024-01-15T11:45:00Z',
-    issues: [
-      {
-        id: 1,
-        severity: 'minor',
-        title: 'Force majeure bandida etishmovchilik',
-        description: 'Fors-major holatlari ro\'yxatida tabiiy ofatlar to\'liq ko\'rsatilmagan',
-        location: 'Band 8.1',
-        recommendation: 'Fuqarolik Kodeksining 333-moddasiga muvofiq force majeure holatlarini to\'ldiring',
-        law_reference: 'Fuqarolik Kodeksi, 333-modda',
-        status: 'open',
-      },
-      {
-        id: 2,
-        severity: 'info',
-        title: 'Nizolarni hal qilish tartibi',
-        description: 'Hakamlik sudi orqali nizolarni hal qilish imkoniyati ko\'rsatilmagan',
-        location: 'Band 9.2',
-        recommendation: 'Hakamlik sudi to\'g\'risidagi bandni qo\'shish tavsiya etiladi',
-        law_reference: 'Hakamlik sudlari to\'g\'risidagi qonun',
-        status: 'open',
-      },
-      {
-        id: 3,
-        severity: 'major',
-        title: 'Jarima va peniya miqdori',
-        description: 'Belgilangan jarima miqdori qonuniy chegaradan oshgan',
-        location: 'Band 7.3',
-        recommendation: 'Jarima miqdorini 50% dan oshmaydigan qilib o\'zgartiring',
-        law_reference: 'Fuqarolik Kodeksi, 260-modda',
-        status: 'resolved',
-      },
-    ],
-    key_terms: [
-      { term: 'Shartnoma muddati', value: '12 oy', location: 'Band 2.1' },
-      { term: 'Shartnoma summasi', value: '150,000,000 so\'m', location: 'Band 3.1' },
-      { term: 'To\'lov muddati', value: '30 kun', location: 'Band 3.3' },
-      { term: 'Kafolat muddati', value: '6 oy', location: 'Band 5.2' },
-    ],
-    sections: [
-      { title: 'Umumiy qoidalar', risk: 'low', issues_count: 0 },
-      { title: 'Shartnoma predmeti', risk: 'low', issues_count: 0 },
-      { title: 'To\'lov shartlari', risk: 'low', issues_count: 0 },
-      { title: 'Tomonlarning majburiyatlari', risk: 'medium', issues_count: 1 },
-      { title: 'Javobgarlik', risk: 'high', issues_count: 1 },
-      { title: 'Force majeure', risk: 'medium', issues_count: 1 },
-      { title: 'Nizolarni hal qilish', risk: 'low', issues_count: 0 },
-    ],
-  }
-
-  const displayContract = contract || mockContract
-  const displayAnalysis = analysisData?.results?.[0] || mockAnalysis
+  // Use real data only - no mock data
+  const displayContract = contract
+  const displayAnalysis = analysisData?.results?.[0] || null
 
   const analyzeMutation = useMutation({
     mutationFn: () => contractsService.analyzeContract(id),
@@ -135,10 +73,33 @@ export default function ContractDetailPage() {
     },
   })
 
+  const handleGenerateReport = (format) => {
+    generateReportMutation.mutate(format)
+    setReportMenuOpen(false)
+  }
+
   if (contractLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <LoadingSpinner size="lg" />
+      </div>
+    )
+  }
+
+  if (contractError || !displayContract) {
+    return (
+      <div className="text-center py-12">
+        <DocumentTextIcon className="mx-auto h-12 w-12 text-gray-400" />
+        <h3 className="mt-2 text-sm font-medium text-gray-900">Shartnoma topilmadi</h3>
+        <p className="mt-1 text-sm text-gray-500">
+          So'ralgan shartnoma mavjud emas yoki o'chirilgan.
+        </p>
+        <p className="mt-1 text-xs text-gray-400">ID: {id}</p>
+        <div className="mt-6">
+          <Link to="/contracts" className="btn-primary">
+            Shartnomalar ro'yxati
+          </Link>
+        </div>
       </div>
     )
   }
@@ -189,27 +150,39 @@ export default function ContractDetailPage() {
               Tahlil qilish
             </button>
           )}
-          <div className="relative group">
-            <button className="btn-secondary">
+          <div className="relative">
+            <button 
+              onClick={() => setReportMenuOpen(!reportMenuOpen)}
+              className="btn-secondary flex items-center"
+            >
               <DocumentArrowDownIcon className="h-5 w-5 mr-2" />
               Hisobot
+              <ChevronDownIcon className="h-4 w-4 ml-2" />
             </button>
-            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 hidden group-hover:block z-10">
-              <div className="py-1">
-                <button
-                  onClick={() => generateReportMutation.mutate('pdf')}
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
-                  PDF formatda
-                </button>
-                <button
-                  onClick={() => generateReportMutation.mutate('docx')}
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
-                  DOCX formatda
-                </button>
-              </div>
-            </div>
+            {reportMenuOpen && (
+              <>
+                <div 
+                  className="fixed inset-0 z-10" 
+                  onClick={() => setReportMenuOpen(false)}
+                />
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-20">
+                  <div className="py-1">
+                    <button
+                      onClick={() => handleGenerateReport('pdf')}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      PDF formatda
+                    </button>
+                    <button
+                      onClick={() => handleGenerateReport('docx')}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      DOCX formatda
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -227,19 +200,39 @@ export default function ContractDetailPage() {
               </div>
               <div>
                 <dt className="text-sm font-medium text-gray-500">Shartnoma turi</dt>
-                <dd className="mt-1 text-sm text-gray-900">{displayContract.contract_type}</dd>
+                <dd className="mt-1 text-sm text-gray-900">{displayContract.contract_type_display || displayContract.contract_type}</dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-gray-500">Kontragent</dt>
-                <dd className="mt-1 text-sm text-gray-900">{displayContract.counterparty_name || '-'}</dd>
+                <dt className="text-sm font-medium text-gray-500">1-tomon (Buyurtmachi)</dt>
+                <dd className="mt-1 text-sm text-gray-900">{displayContract.party_a || '-'}</dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-gray-500">INN</dt>
-                <dd className="mt-1 text-sm text-gray-900">{displayContract.counterparty_inn || '-'}</dd>
+                <dt className="text-sm font-medium text-gray-500">1-tomon INN</dt>
+                <dd className="mt-1 text-sm text-gray-900">{displayContract.party_a_inn || '-'}</dd>
               </div>
+              <div>
+                <dt className="text-sm font-medium text-gray-500">2-tomon (Ijrochi)</dt>
+                <dd className="mt-1 text-sm text-gray-900">{displayContract.party_b || '-'}</dd>
+              </div>
+              <div>
+                <dt className="text-sm font-medium text-gray-500">2-tomon INN</dt>
+                <dd className="mt-1 text-sm text-gray-900">{displayContract.party_b_inn || '-'}</dd>
+              </div>
+              {displayContract.contract_date && (
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">Shartnoma sanasi</dt>
+                  <dd className="mt-1 text-sm text-gray-900">{format(new Date(displayContract.contract_date), 'dd.MM.yyyy')}</dd>
+                </div>
+              )}
+              {displayContract.total_amount && (
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">Shartnoma summasi</dt>
+                  <dd className="mt-1 text-sm text-gray-900">{displayContract.total_amount?.toLocaleString()} {displayContract.currency}</dd>
+                </div>
+              )}
               <div className="col-span-2">
                 <dt className="text-sm font-medium text-gray-500">Izoh</dt>
-                <dd className="mt-1 text-sm text-gray-900">{displayContract.description || '-'}</dd>
+                <dd className="mt-1 text-sm text-gray-900 whitespace-pre-wrap">{displayContract.notes || '-'}</dd>
               </div>
             </dl>
           </div>
@@ -293,28 +286,132 @@ export default function ContractDetailPage() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
                             <ComplianceIssueBadge severity={issue.severity} />
-                            {issue.status === 'resolved' && (
+                            {issue.issue_type === 'spelling' && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                                📝 Imloviy xato
+                              </span>
+                            )}
+                            {issue.issue_type === 'grammar' && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
+                                📖 Grammatik xato
+                              </span>
+                            )}
+                            {issue.is_resolved && (
                               <span className="badge-success">Hal qilindi</span>
                             )}
                           </div>
                           <h4 className="text-sm font-medium text-gray-900">{issue.title}</h4>
                           <p className="mt-1 text-sm text-gray-600">{issue.description}</p>
                           <p className="mt-2 text-xs text-gray-500">
-                            <span className="font-medium">Joylashuv:</span> {issue.location}
+                            <span className="font-medium">Joylashuv:</span> {issue.section_reference || issue.clause_reference || '-'}
                           </p>
+                          {issue.text_excerpt && (
+                            <div className="mt-2 p-2 bg-gray-100 rounded text-xs text-gray-700 font-mono">
+                              "{issue.text_excerpt}"
+                            </div>
+                          )}
                           <div className="mt-3 p-3 bg-blue-50 rounded-lg">
                             <p className="text-sm text-blue-800">
-                              <span className="font-medium">Tavsiya:</span> {issue.recommendation}
+                              <span className="font-medium">Tavsiya:</span> {issue.suggestion}
                             </p>
-                            <p className="mt-1 text-xs text-blue-600">
-                              <span className="font-medium">Qonun:</span> {issue.law_reference}
-                            </p>
+                            {issue.suggested_text && issue.issue_type === 'spelling' && (
+                              <p className="mt-1 text-sm text-green-700 font-medium">
+                                ✓ To'g'ri: {issue.suggested_text}
+                              </p>
+                            )}
+                            {(issue.law_name || issue.law_article) && (
+                              <p className="mt-1 text-xs text-blue-600">
+                                <span className="font-medium">Qonun:</span> {issue.law_name} {issue.law_article}
+                              </p>
+                            )}
                           </div>
                         </div>
                       </div>
                     </li>
                   ))}
                 </ul>
+              </div>
+
+              {/* Matn.uz Imlo Tekshiruvi */}
+              <div className="card">
+                <div className="card-header flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <LanguageIcon className="h-5 w-5 text-purple-600" />
+                    <h3 className="text-lg font-medium text-gray-900">Imlo tekshiruvi (Matn.uz)</h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        if (displayContract.extracted_text) {
+                          navigator.clipboard.writeText(displayContract.extracted_text)
+                          setTextCopied(true)
+                          toast.success('Matn nusxalandi!')
+                          setTimeout(() => setTextCopied(false), 2000)
+                        }
+                      }}
+                      className="btn-secondary text-sm flex items-center gap-1"
+                      disabled={!displayContract.extracted_text}
+                    >
+                      <ClipboardDocumentIcon className="h-4 w-4" />
+                      {textCopied ? 'Nusxalandi!' : 'Matnni nusxalash'}
+                    </button>
+                    <a
+                      href="https://matn.uz"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-secondary text-sm flex items-center gap-1"
+                    >
+                      <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+                      Matn.uz ga o'tish
+                    </a>
+                  </div>
+                </div>
+                <div className="p-4">
+                  <div className="mb-4">
+                    <button
+                      onClick={() => setShowMatnUz(!showMatnUz)}
+                      className="btn-primary flex items-center gap-2"
+                    >
+                      <LanguageIcon className="h-5 w-5" />
+                      {showMatnUz ? 'Matn.uz ni yopish' : 'Matn.uz da tekshirish'}
+                    </button>
+                  </div>
+                  
+                  {showMatnUz && (
+                    <div className="border rounded-lg overflow-hidden">
+                      <div className="bg-purple-50 p-3 border-b flex items-center justify-between">
+                        <span className="text-sm text-purple-700 font-medium">
+                          📝 Matn.uz - O'zbek tili imlo tekshiruvchisi
+                        </span>
+                        <span className="text-xs text-purple-500">
+                          Matnni quyidagi maydonga joylang va "Tekshirish" tugmasini bosing
+                        </span>
+                      </div>
+                      <iframe
+                        src="https://matn.uz"
+                        className="w-full border-0"
+                        style={{ height: '600px' }}
+                        title="Matn.uz Imlo Tekshiruvi"
+                        sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+                      />
+                    </div>
+                  )}
+                  
+                  {!showMatnUz && displayContract.extracted_text && (
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Shartnoma matni:</h4>
+                      <div className="max-h-48 overflow-y-auto">
+                        <pre className="text-xs text-gray-600 whitespace-pre-wrap font-sans">
+                          {displayContract.extracted_text.substring(0, 1000)}
+                          {displayContract.extracted_text.length > 1000 && '...'}
+                        </pre>
+                      </div>
+                      <p className="mt-3 text-xs text-gray-500">
+                        💡 "Matnni nusxalash" tugmasini bosing va Matn.uz saytiga o'tib qo'ying
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             </>
           )}
@@ -338,7 +435,7 @@ export default function ContractDetailPage() {
             <div className="card p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4 text-center">Risk Bahosi</h3>
               <div className="flex justify-center mb-4">
-                <RiskScoreCircle score={displayAnalysis.risk_score} size={160} />
+                <RiskScoreCircle score={displayAnalysis.overall_score} size={160} />
               </div>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -372,19 +469,19 @@ export default function ContractDetailPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <ExclamationTriangleIcon className="h-5 w-5 text-orange-500 mr-2" />
-                    <span className="text-sm text-gray-600">Jiddiy</span>
+                    <span className="text-sm text-gray-600">Yuqori</span>
                   </div>
                   <span className="font-semibold text-orange-600">
-                    {displayAnalysis.issues.filter(i => i.severity === 'major').length}
+                    {displayAnalysis.issues.filter(i => i.severity === 'high').length}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <ExclamationTriangleIcon className="h-5 w-5 text-yellow-500 mr-2" />
-                    <span className="text-sm text-gray-600">Kichik</span>
+                    <span className="text-sm text-gray-600">O'rta</span>
                   </div>
                   <span className="font-semibold text-yellow-600">
-                    {displayAnalysis.issues.filter(i => i.severity === 'minor').length}
+                    {displayAnalysis.issues.filter(i => i.severity === 'medium').length}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -394,6 +491,16 @@ export default function ContractDetailPage() {
                   </div>
                   <span className="font-semibold text-blue-600">
                     {displayAnalysis.issues.filter(i => i.severity === 'info').length}
+                  </span>
+                </div>
+                {/* Imloviy xatolar */}
+                <div className="flex items-center justify-between pt-2 border-t border-gray-200 mt-2">
+                  <div className="flex items-center">
+                    <LanguageIcon className="h-5 w-5 text-purple-500 mr-2" />
+                    <span className="text-sm text-gray-600">Imloviy xatolar</span>
+                  </div>
+                  <span className="font-semibold text-purple-600">
+                    {displayAnalysis.issues.filter(i => i.issue_type === 'spelling').length}
                   </span>
                 </div>
               </div>

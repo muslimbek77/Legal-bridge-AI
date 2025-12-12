@@ -6,8 +6,7 @@ import {
   ExclamationTriangleIcon,
   CheckCircleIcon,
   ClockIcon,
-  ArrowUpIcon,
-  ArrowDownIcon,
+  DocumentPlusIcon,
 } from '@heroicons/react/24/outline'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -22,35 +21,27 @@ export default function DashboardPage() {
     queryFn: contractsService.getStatistics,
   })
 
-  // Mock data for demo - always use this for charts since backend doesn't provide chart data
-  const mockChartData = {
-    contracts_by_type: [
-      { name: 'Xizmat ko\'rsatish', value: 45 },
-      { name: 'Yetkazib berish', value: 38 },
-      { name: 'Ijara', value: 32 },
-      { name: 'Mehnat', value: 25 },
-      { name: 'Boshqa', value: 16 },
-    ],
+  // Haqiqiy ma'lumotlar - agar shartnomalar bo'lmasa, bo'sh ko'rsatiladi
+  const hasData = stats?.total > 0
+
+  // Bo'sh holatdagi ma'lumotlar
+  const emptyChartData = {
+    contracts_by_type: [],
     monthly_analysis: [
-      { month: 'Yan', count: 12 },
-      { month: 'Fev', count: 19 },
-      { month: 'Mar', count: 15 },
-      { month: 'Apr', count: 22 },
-      { month: 'May', count: 28 },
-      { month: 'Iyun', count: 25 },
+      { month: 'Yan', count: 0 },
+      { month: 'Fev', count: 0 },
+      { month: 'Mar', count: 0 },
+      { month: 'Apr', count: 0 },
+      { month: 'May', count: 0 },
+      { month: 'Iyun', count: 0 },
     ],
     risk_distribution: [
-      { name: 'Past (0-25)', value: 45, color: '#10B981' },
-      { name: 'O\'rta (25-50)', value: 52, color: '#F59E0B' },
-      { name: 'Yuqori (50-75)', value: 35, color: '#F97316' },
-      { name: 'Kritik (75-100)', value: 10, color: '#EF4444' },
+      { name: 'Past (0-25)', value: 0, color: '#10B981' },
+      { name: 'O\'rta (25-50)', value: 0, color: '#F59E0B' },
+      { name: 'Yuqori (50-75)', value: 0, color: '#F97316' },
+      { name: 'Kritik (75-100)', value: 0, color: '#EF4444' },
     ],
-    recent_contracts: [
-      { id: 1, title: 'IT xizmatlari shartnomasi', status: 'analyzed', risk_score: 35 },
-      { id: 2, title: 'Ofis ijarasi shartnomasi', status: 'processing', risk_score: null },
-      { id: 3, title: 'Tovarlar yetkazib berish', status: 'analyzed', risk_score: 62 },
-      { id: 4, title: 'Konsalting xizmatlari', status: 'analyzed', risk_score: 28 },
-    ],
+    recent_contracts: [],
   }
 
   // Map backend stats to display format
@@ -58,11 +49,14 @@ export default function DashboardPage() {
     total_contracts: stats?.total || 0,
     analyzed_contracts: stats?.by_status?.analyzed || 0,
     pending_contracts: (stats?.by_status?.uploaded || 0) + (stats?.by_status?.processing || 0),
-    critical_issues: 0,
-    average_risk_score: 42,
-    compliance_rate: 87,
-    // Use mock data for charts
-    ...mockChartData,
+    critical_issues: stats?.critical_issues || 0,
+    average_risk_score: stats?.average_risk_score || 0,
+    compliance_rate: stats?.compliance_rate || 0,
+    // Haqiqiy ma'lumotlarni ishlatish
+    contracts_by_type: stats?.by_type?.length > 0 ? stats.by_type : emptyChartData.contracts_by_type,
+    monthly_analysis: stats?.monthly_analysis?.length > 0 ? stats.monthly_analysis : emptyChartData.monthly_analysis,
+    risk_distribution: stats?.risk_distribution?.length > 0 ? stats.risk_distribution : emptyChartData.risk_distribution,
+    recent_contracts: stats?.recent_contracts?.length > 0 ? stats.recent_contracts : emptyChartData.recent_contracts,
   }
 
   if (isLoading) {
@@ -79,32 +73,24 @@ export default function DashboardPage() {
       value: displayStats.total_contracts,
       icon: DocumentTextIcon,
       color: 'bg-blue-500',
-      change: '+12%',
-      changeType: 'increase',
     },
     {
       name: 'Tahlil qilingan',
       value: displayStats.analyzed_contracts,
       icon: CheckCircleIcon,
       color: 'bg-green-500',
-      change: '+8%',
-      changeType: 'increase',
     },
     {
       name: 'Kutilmoqda',
       value: displayStats.pending_contracts,
       icon: ClockIcon,
       color: 'bg-yellow-500',
-      change: '-3%',
-      changeType: 'decrease',
     },
     {
       name: 'Kritik muammolar',
       value: displayStats.critical_issues,
       icon: ExclamationTriangleIcon,
       color: 'bg-red-500',
-      change: '-15%',
-      changeType: 'decrease',
     },
   ]
 
@@ -137,16 +123,6 @@ export default function DashboardPage() {
                   <dt className="text-sm font-medium text-gray-500 truncate">{stat.name}</dt>
                   <dd className="flex items-baseline">
                     <div className="text-2xl font-semibold text-gray-900">{stat.value}</div>
-                    <div className={`ml-2 flex items-baseline text-sm font-semibold ${
-                      stat.changeType === 'increase' ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {stat.changeType === 'increase' ? (
-                        <ArrowUpIcon className="h-4 w-4 flex-shrink-0" />
-                      ) : (
-                        <ArrowDownIcon className="h-4 w-4 flex-shrink-0" />
-                      )}
-                      <span className="ml-1">{stat.change}</span>
-                    </div>
                   </dd>
                 </dl>
               </div>
@@ -216,26 +192,33 @@ export default function DashboardPage() {
 
       {/* Bottom row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Contract Types */}
+        {/* Shartnoma Turlari */}
         <div className="card p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Shartnoma Turlari</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <PieChart>
-              <Pie
-                data={displayStats.contracts_by_type}
-                cx="50%"
-                cy="50%"
-                outerRadius={100}
-                dataKey="value"
-                label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-              >
-                {displayStats.contracts_by_type.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={RISK_COLORS[index % RISK_COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+          {displayStats.contracts_by_type.length > 0 ? (
+            <ResponsiveContainer width="100%" height={250}>
+              <PieChart>
+                <Pie
+                  data={displayStats.contracts_by_type}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={100}
+                  dataKey="value"
+                  label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                >
+                  {displayStats.contracts_by_type.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={RISK_COLORS[index % RISK_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-[250px] text-gray-400">
+              <ChartBarIcon className="h-16 w-16 mb-3" />
+              <p className="text-sm">Hali shartnomalar yo'q</p>
+            </div>
+          )}
         </div>
 
         {/* Recent Contracts */}
@@ -246,31 +229,41 @@ export default function DashboardPage() {
               Barchasini ko'rish →
             </Link>
           </div>
-          <ul className="divide-y divide-gray-200">
-            {displayStats.recent_contracts.map((contract) => (
-              <li key={contract.id} className="px-6 py-4 hover:bg-gray-50">
-                <Link to={`/contracts/${contract.id}`} className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <DocumentTextIcon className="h-10 w-10 text-gray-400" />
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-900">{contract.title}</p>
-                      <p className="text-sm text-gray-500 capitalize">{contract.status}</p>
+          {displayStats.recent_contracts.length > 0 ? (
+            <ul className="divide-y divide-gray-200">
+              {displayStats.recent_contracts.map((contract) => (
+                <li key={contract.id} className="px-6 py-4 hover:bg-gray-50">
+                  <Link to={`/contracts/${contract.id}`} className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <DocumentTextIcon className="h-10 w-10 text-gray-400" />
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-900">{contract.title}</p>
+                        <p className="text-sm text-gray-500 capitalize">{contract.status}</p>
+                      </div>
                     </div>
-                  </div>
-                  {contract.risk_score !== null && (
-                    <div className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                      contract.risk_score < 25 ? 'bg-green-100 text-green-800' :
-                      contract.risk_score < 50 ? 'bg-yellow-100 text-yellow-800' :
-                      contract.risk_score < 75 ? 'bg-orange-100 text-orange-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
-                      {contract.risk_score}
-                    </div>
-                  )}
-                </Link>
-              </li>
-            ))}
-          </ul>
+                    {contract.risk_score !== null && (
+                      <div className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                        contract.risk_score < 25 ? 'bg-green-100 text-green-800' :
+                        contract.risk_score < 50 ? 'bg-yellow-100 text-yellow-800' :
+                        contract.risk_score < 75 ? 'bg-orange-100 text-orange-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {contract.risk_score}
+                      </div>
+                    )}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+              <DocumentPlusIcon className="h-16 w-16 mb-3" />
+              <p className="text-sm mb-4">Hali shartnomalar yuklanmagan</p>
+              <Link to="/contracts/upload" className="btn-primary text-sm">
+                Birinchi shartnomani yuklash
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -63,6 +63,8 @@ class RiskScoringEngine:
         IssueType.UNCLEAR: 0.8,
         IssueType.FORMAT: 0.7,
         IssueType.CONFLICT: 1.2,
+        IssueType.SPELLING: 0.3,  # Imloviy xatolar uchun kichik chegirma
+        IssueType.GRAMMAR: 0.4,   # Grammatik xatolar uchun kichik chegirma
         IssueType.OTHER: 0.5,
     }
     

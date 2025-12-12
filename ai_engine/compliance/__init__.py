@@ -13,6 +13,36 @@ from ai_engine.parser import Section, SectionType, ContractMetadata
 logger = logging.getLogger(__name__)
 
 
+# O'zbekcha termin tarjimalari
+SECTION_NAMES_UZ = {
+    "parties": "Tomonlar",
+    "subject": "Shartnoma predmeti",
+    "price": "Narx va to'lov shartlari",
+    "term": "Shartnoma muddati",
+    "liability": "Javobgarlik",
+    "requisites": "Tomonlar rekvizitlari",
+    "delivery": "Yetkazib berish shartlari",
+    "quality": "Sifat talablari",
+    "warranty": "Kafolat",
+    "force_majeure": "Fors-major",
+    "dispute": "Nizolarni hal qilish",
+    "termination": "Shartnomani bekor qilish",
+    "rights": "Huquqlar",
+    "obligations": "Majburiyatlar",
+    "signatures": "Imzolar",
+    "confidentiality": "Maxfiylik",
+    "amendments": "O'zgartirishlar",
+    "acceptance": "Qabul qilish",
+    "payment": "To'lov",
+    "other": "Boshqa",
+}
+
+
+def get_section_name_uz(section_value: str) -> str:
+    """Get Uzbek name for section type."""
+    return SECTION_NAMES_UZ.get(section_value, section_value)
+
+
 class IssueSeverity(Enum):
     """Severity levels for compliance issues."""
     CRITICAL = "critical"
@@ -32,6 +62,8 @@ class IssueType(Enum):
     ILLEGAL = "illegal"
     MISSING_INFO = "missing_info"
     FORMAT = "format"
+    SPELLING = "spelling"
+    GRAMMAR = "grammar"
     OTHER = "other"
 
 
@@ -370,12 +402,13 @@ class LegalComplianceEngine:
         
         for section_type in required:
             if section_type not in found_types:
+                section_name_uz = get_section_name_uz(section_type.value)
                 issues.append(ComplianceIssue(
                     issue_type=IssueType.MISSING_CLAUSE,
                     severity=IssueSeverity.HIGH,
-                    title=f"Yetishmayotgan bo'lim: {section_type.value}",
-                    description=f"Shartnomada '{section_type.value}' bo'limi topilmadi",
-                    suggestion=f"'{section_type.value}' bo'limini qo'shing",
+                    title=f"Yetishmayotgan bo'lim: {section_name_uz}",
+                    description=f"Shartnomada '{section_name_uz}' bo'limi topilmadi",
+                    suggestion=f"'{section_name_uz}' bo'limini qo'shing",
                     law_name="O'zbekiston Respublikasi Fuqarolik kodeksi",
                     law_article="354-modda",
                 ))
@@ -394,6 +427,7 @@ class LegalComplianceEngine:
         # Get relevant section
         if rule.section_type:
             section = self._get_section_by_type(sections, rule.section_type)
+            section_name_uz = get_section_name_uz(rule.section_type.value)
             if not section and rule.check_type == "mandatory":
                 issues.append(ComplianceIssue(
                     issue_type=IssueType.MISSING_CLAUSE,
@@ -402,7 +436,7 @@ class LegalComplianceEngine:
                     description=rule.description,
                     law_name=rule.law_name,
                     law_article=rule.law_article,
-                    suggestion=f"'{rule.section_type.value}' bo'limini qo'shing",
+                    suggestion=f"'{section_name_uz}' bo'limini qo'shing",
                 ))
                 return issues
             

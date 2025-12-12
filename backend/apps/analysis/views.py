@@ -2,12 +2,17 @@
 Views for Analysis app.
 """
 
+import sys
+import os
 from rest_framework import viewsets, status
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from django.utils import timezone
+
+# Add ai_engine to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 
 from .models import AnalysisResult, ComplianceIssue, AnalysisFeedback
 from .serializers import (
@@ -30,6 +35,9 @@ class AnalysisResultViewSet(viewsets.ReadOnlyModelViewSet):
     filterset_fields = ['contract', 'status', 'risk_level']
     
     def get_serializer_class(self):
+        # Use detail serializer when filtering by contract (single result expected)
+        if self.request.query_params.get('contract'):
+            return AnalysisResultDetailSerializer
         if self.action == 'list':
             return AnalysisResultListSerializer
         return AnalysisResultDetailSerializer
@@ -200,3 +208,133 @@ class AnalysisFeedbackViewSet(viewsets.ModelViewSet):
             ).count()
         
         return Response(stats)
+
+
+@api_view(['POST'])
+@permission_classes([])
+def check_spelling(request):
+    """
+    Check spelling in text using AI model.
+    
+    Request body:
+    {
+        "text": "Tekshiriladigan matn",
+        "language": "uz_latin",
+        "use_ai": true  # Optional: use AI for checking
+    }
+    """
+    try:
+        text = request.data.get('text', '')
+        language = request.data.get('language', 'auto')
+        use_ai = request.data.get('use_ai', True)
+        
+        if not text:
+            return Response(
+                {'error': 'Matn kiritilmadi'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if len(text) > 10000:
+            return Response(
+                {'error': 'Matn juda uzun (maksimum 10000 belgi)'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        error_list = []
+        
+        # Try AI-based checking first
+        if use_ai:
+            try:
+                import ollama
+                import json
+                import re
+                
+                client = ollama.Client(host='http://localhost:11434')
+                
+                prompt = f"""Sen o'zbek tili imlo tekshiruvchisi mutaxassisissan. Quyidagi matnni tekshir va FAQAT xatolarni top.
+
+Matn: "{text}"
+
+Har bir topilgan xato uchun quyidagi formatda javob ber (JSON array):
+[
+  {{"word": "xato_soz", "suggestion": "togri_soz", "description": "Xato tavsifi"}}
+]
+
+Qoidalar:
+1. x harfi o'rniga h bo'lishi kerak bo'lgan so'zlarni top (masalan: xozir→hozir, xech→hech, xam→ham)
+2. Tutuq belgisi (') tushib qolgan so'zlarni top (masalan: yoq→yo'q, boladi→bo'ladi, kop→ko'p)
+3. Noto'g'ri yozilgan so'zlarni top (masalan: qaley→qanday, blan→bilan)
+4. Grammatik xatolarni top
+
+Agar xato topilmasa, bo'sh array qaytar: []
+FAQAT JSON formatda javob ber, boshqa hech narsa yozma."""
+
+                response = client.chat(
+                    model='llama3.1',
+                    messages=[{'role': 'user', 'content': prompt}]
+                )
+                
+                ai_response = response['message']['content'].strip()
+                
+                # Parse JSON from response
+                json_match = re.search(r'\[.*\]', ai_response, re.DOTALL)
+                if json_match:
+                    try:
+                        ai_errors = json.loads(json_match.group())
+                        
+                        for i, err in enumerate(ai_errors):
+                            if isinstance(err, dict) and 'word' in err and 'suggestion' in err:
+                                # Find position of word in text
+                                word = err.get('word', '')
+                                pos = text.lower().find(word.lower())
+                                
+                                error_list.append({
+                                    'word': word,
+                                    'suggestion': err.get('suggestion', ''),
+                                    'error_type': 'ai_detected',
+                                    'position': pos if pos >= 0 else i * 10,
+                                    'line_number': 1,
+                                    'context': text[:100] + ('...' if len(text) > 100 else ''),
+                                    'language': language,
+                                    'description': err.get('description', f"'{word}' → '{err.get('suggestion', '')}'"),
+                                })
+                    except json.JSONDecodeError:
+                        pass
+                        
+            except Exception as e:
+                # If AI fails, fall back to dictionary-based checking
+                print(f"AI spelling check failed: {e}, falling back to dictionary")
+                use_ai = False
+        
+        # Fallback to dictionary-based checking if AI didn't work or not requested
+        if not use_ai or not error_list:
+            from ai_engine.spelling import SpellingChecker
+            
+            checker = SpellingChecker()
+            errors = checker.check_text(text, language)
+            
+            for error in errors:
+                error_list.append({
+                    'word': error.word,
+                    'suggestion': error.suggestion,
+                    'error_type': error.error_type.value,
+                    'position': error.position,
+                    'line_number': error.line_number,
+                    'context': error.context,
+                    'language': error.language,
+                    'description': error.description,
+                })
+        
+        return Response({
+            'errors': error_list,
+            'total_errors': len(error_list),
+            'language_detected': language if language != 'auto' else 'uz_latin',
+            'text_length': len(text),
+            'method': 'ai' if use_ai and error_list else 'dictionary'
+        })
+        
+    except Exception as e:
+        return Response(
+            {'error': f'Xatolik: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

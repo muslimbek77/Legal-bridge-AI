@@ -10,9 +10,10 @@ from dataclasses import dataclass, asdict
 
 from ai_engine.ocr import OCRProcessor
 from ai_engine.parser import ContractParser, Section, ContractMetadata, SectionType
-from ai_engine.compliance import LegalComplianceEngine, ComplianceIssue
+from ai_engine.compliance import LegalComplianceEngine, ComplianceIssue, IssueSeverity, IssueType
 from ai_engine.risk_scoring import RiskScoringEngine, RiskScore
 from ai_engine.rag import LegalRAG
+from ai_engine.spelling import SpellingChecker, SpellingError
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,7 @@ class AnalysisConfig:
     """Configuration for analysis pipeline."""
     analyze_compliance: bool = True
     analyze_risks: bool = True
+    analyze_spelling: bool = True  # Imloviy xatolarni tekshirish
     use_llm: bool = True
     use_rag: bool = True
     ocr_languages: List[str] = None
@@ -52,6 +54,7 @@ class ContractAnalysisPipeline:
         self.parser = ContractParser()
         self.compliance_engine = LegalComplianceEngine()
         self.risk_engine = RiskScoringEngine()
+        self.spelling_checker = SpellingChecker()
         
         # RAG system (lazy initialization)
         self._rag = None
@@ -112,6 +115,27 @@ class ContractAnalysisPipeline:
                     sections, metadata, contract_type
                 )
             
+            # Step 5.5: Check spelling errors
+            spelling_errors = []
+            if self.config.analyze_spelling:
+                logger.info("Checking spelling errors...")
+                spelling_errors = self.spelling_checker.check_text(text, metadata.language)
+                # Convert spelling errors to compliance issues
+                for sp_error in spelling_errors:
+                    issues.append(ComplianceIssue(
+                        issue_type=IssueType.SPELLING,
+                        severity=IssueSeverity.LOW,
+                        title=f"Imloviy xato: {sp_error.word}",
+                        description=sp_error.description,
+                        section_reference=f"{sp_error.line_number}-qator",
+                        clause_reference='',
+                        text_excerpt=sp_error.context,
+                        law_name='',
+                        law_article='',
+                        suggestion=f"To'g'ri yozilishi: {sp_error.suggestion}",
+                        suggested_text=sp_error.suggestion
+                    ))
+            
             # Step 6: Calculate risk score
             risk_score = None
             if self.config.analyze_risks:
@@ -142,6 +166,7 @@ class ContractAnalysisPipeline:
                 'sections_count': len(sections),
                 'issues': [self._issue_to_dict(i) for i in issues],
                 'issues_count': len(issues),
+                'spelling_errors_count': len(spelling_errors),
                 'overall_score': risk_score.overall_score if risk_score else 50,
                 'risk_level': risk_score.risk_level.value if risk_score else 'medium',
                 'compliance_score': risk_score.compliance_score if risk_score else 50,

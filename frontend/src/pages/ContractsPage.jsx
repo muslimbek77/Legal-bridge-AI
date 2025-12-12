@@ -58,56 +58,9 @@ export default function ContractsPage() {
     },
   })
 
-  // Mock data for demo
-  const mockContracts = [
-    {
-      id: 1,
-      title: 'IT xizmatlari shartnomasi',
-      contract_type: 'service',
-      status: 'analyzed',
-      risk_score: 35,
-      created_at: '2024-01-15T10:30:00Z',
-      counterparty_name: 'TechSolutions LLC',
-    },
-    {
-      id: 2,
-      title: 'Ofis ijarasi shartnomasi',
-      contract_type: 'lease',
-      status: 'processing',
-      risk_score: null,
-      created_at: '2024-01-14T14:20:00Z',
-      counterparty_name: 'Real Estate Pro',
-    },
-    {
-      id: 3,
-      title: 'Tovarlar yetkazib berish',
-      contract_type: 'supply',
-      status: 'analyzed',
-      risk_score: 62,
-      created_at: '2024-01-13T09:15:00Z',
-      counterparty_name: 'Global Trade Co',
-    },
-    {
-      id: 4,
-      title: 'Konsalting xizmatlari',
-      contract_type: 'service',
-      status: 'analyzed',
-      risk_score: 28,
-      created_at: '2024-01-12T16:45:00Z',
-      counterparty_name: 'Business Advisors',
-    },
-    {
-      id: 5,
-      title: 'Mehnat shartnomasi - Dasturchi',
-      contract_type: 'employment',
-      status: 'pending',
-      risk_score: null,
-      created_at: '2024-01-11T11:00:00Z',
-      counterparty_name: 'Alisher Karimov',
-    },
-  ]
-
-  const contracts = data?.results || mockContracts
+  // Haqiqiy ma'lumotlarni ishlatish
+  const contractsList = data?.results || []
+  const hasContracts = contractsList.length > 0
 
   const contractTypes = [
     { value: '', label: 'Barcha turlar' },
@@ -221,11 +174,15 @@ export default function ContractsPage() {
           <div className="flex items-center justify-center h-64">
             <LoadingSpinner size="lg" />
           </div>
-        ) : contracts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-            <DocumentTextIcon className="h-12 w-12 mb-4" />
-            <p className="text-lg font-medium">Shartnomalar topilmadi</p>
-            <p className="text-sm">Yangi shartnoma yuklang</p>
+        ) : !hasContracts ? (
+          <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+            <DocumentTextIcon className="h-16 w-16 mb-4" />
+            <p className="text-lg font-medium text-gray-600 mb-2">Shartnomalar topilmadi</p>
+            <p className="text-sm text-gray-500 mb-6">Birinchi shartnomangizni yuklang va tahlil qiling</p>
+            <Link to="/contracts/upload" className="btn-primary">
+              <PlusIcon className="h-5 w-5 mr-2" />
+              Shartnoma yuklash
+            </Link>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -253,7 +210,7 @@ export default function ContractsPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {contracts.map((contract) => (
+                {contractsList.map((contract) => (
                   <tr key={contract.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">

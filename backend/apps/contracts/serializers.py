@@ -122,8 +122,9 @@ class ContractUploadSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contract
         fields = [
-            'original_file', 'title', 'contract_type', 'notes'
+            'id', 'original_file', 'title', 'contract_type', 'notes', 'status', 'created_at'
         ]
+        read_only_fields = ['id', 'status', 'created_at']
     
     def validate_original_file(self, value):
         # Validate file type

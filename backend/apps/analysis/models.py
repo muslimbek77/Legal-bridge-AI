@@ -112,6 +112,8 @@ class ComplianceIssue(models.Model):
         ILLEGAL = 'illegal', 'Noqonuniy band'
         MISSING_INFO = 'missing_info', 'Yetishmayotgan ma\'lumot'
         FORMAT = 'format', 'Format xatoligi'
+        SPELLING = 'spelling', 'Imloviy xato'
+        GRAMMAR = 'grammar', 'Grammatik xato'
         OTHER = 'other', 'Boshqa'
     
     analysis = models.ForeignKey(
