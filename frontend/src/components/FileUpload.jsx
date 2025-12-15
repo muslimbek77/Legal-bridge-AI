@@ -82,7 +82,7 @@ export default function FileUpload({
               <div className="flex items-center min-w-0">
                 <DocumentIcon className="h-8 w-8 text-gray-400 flex-shrink-0" />
                 <div className="ml-3 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
+                  <a href={URL.createObjectURL(file)}  target ="_blank" rel="noopener noreferrer" className="text-sm font-medium text-gray-900 truncate">{file.name}</a>
                   <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
                 </div>
               </div>

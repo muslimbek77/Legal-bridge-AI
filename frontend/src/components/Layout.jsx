@@ -1,6 +1,6 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom'
-import { Fragment, useState } from 'react'
-import { Dialog, Transition, Menu } from '@headlessui/react'
+import { Outlet, NavLink, useNavigate } from "react-router-dom";
+import { Fragment, useState } from "react";
+import { Dialog, Transition, Menu } from "@headlessui/react";
 import {
   Bars3Icon,
   XMarkIcon,
@@ -12,33 +12,42 @@ import {
   UserCircleIcon,
   ArrowLeftOnRectangleIcon,
   ScaleIcon,
-} from '@heroicons/react/24/outline'
-import { useAuthStore } from '../store/authStore'
-import clsx from 'clsx'
+} from "@heroicons/react/24/outline";
+import { useAuthStore } from "../store/authStore";
+import clsx from "clsx";
+import { Avatar, Space } from "antd";
+import { UserOutlined } from "@ant-design/icons";
+import legal_logo from "../assets/legal_logo.png";
 
 const navigation = [
-  { name: 'Bosh sahifa', href: '/dashboard', icon: HomeIcon },
-  { name: 'Shartnomalar', href: '/contracts', icon: DocumentTextIcon },
-  { name: 'Tahlil', href: '/analysis', icon: ChartBarIcon },
-  { name: 'Hisobotlar', href: '/reports', icon: DocumentChartBarIcon },
-  { name: 'Qonunlar bazasi', href: '/legal-database', icon: BookOpenIcon },
-]
+  { name: "Bosh sahifa", href: "/dashboard", icon: HomeIcon },
+  { name: "Shartnomalar", href: "/contracts", icon: DocumentTextIcon },
+  // { name: "Tahlil", href: "/analysis", icon: ChartBarIcon },
+  { name: "Hisobotlar", href: "/reports", icon: DocumentChartBarIcon },
+  { name: "Qonunlar bazasi", href: "/legal-database", icon: BookOpenIcon },
+];
 
 export default function Layout() {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const { user, logout } = useAuthStore()
-  const navigate = useNavigate()
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
+
+  // console.log("user", user);
 
   const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
+    logout();
+    navigate("/login");
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Mobile sidebar */}
       <Transition.Root show={sidebarOpen} as={Fragment}>
-        <Dialog as="div" className="relative z-50 lg:hidden" onClose={setSidebarOpen}>
+        <Dialog
+          as="div"
+          className="relative z-50 lg:hidden"
+          onClose={setSidebarOpen}
+        >
           <Transition.Child
             as={Fragment}
             enter="transition-opacity ease-linear duration-300"
@@ -72,9 +81,16 @@ export default function Layout() {
                   leaveTo="opacity-0"
                 >
                   <div className="absolute left-full top-0 flex w-16 justify-center pt-5">
-                    <button type="button" className="-m-2.5 p-2.5" onClick={() => setSidebarOpen(false)}>
+                    <button
+                      type="button"
+                      className="-m-2.5 p-2.5"
+                      onClick={() => setSidebarOpen(false)}
+                    >
                       <span className="sr-only">Close sidebar</span>
-                      <XMarkIcon className="h-6 w-6 text-white" aria-hidden="true" />
+                      <XMarkIcon
+                        className="h-6 w-6 text-white"
+                        aria-hidden="true"
+                      />
                     </button>
                   </div>
                 </Transition.Child>
@@ -82,7 +98,9 @@ export default function Layout() {
                 <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white px-6 pb-4">
                   <div className="flex h-16 shrink-0 items-center">
                     <ScaleIcon className="h-8 w-8 text-primary-600" />
-                    <span className="ml-2 text-xl font-bold text-gray-900">Legal Bridge</span>
+                    <span className="ml-2 text-xl font-bold text-gray-900">
+                      Legal Bridge
+                    </span>
                   </div>
                   <nav className="flex flex-1 flex-col">
                     <ul role="list" className="flex flex-1 flex-col gap-y-7">
@@ -96,9 +114,9 @@ export default function Layout() {
                                 className={({ isActive }) =>
                                   clsx(
                                     isActive
-                                      ? 'bg-primary-50 text-primary-600'
-                                      : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50',
-                                    'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
+                                      ? "bg-primary-50 text-primary-600"
+                                      : "text-gray-700 hover:text-primary-600 hover:bg-gray-50",
+                                    "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
                                   )
                                 }
                               >
@@ -106,8 +124,10 @@ export default function Layout() {
                                   <>
                                     <item.icon
                                       className={clsx(
-                                        isActive ? 'text-primary-600' : 'text-gray-400 group-hover:text-primary-600',
-                                        'h-6 w-6 shrink-0'
+                                        isActive
+                                          ? "text-primary-600"
+                                          : "text-gray-400 group-hover:text-primary-600",
+                                        "h-6 w-6 shrink-0"
                                       )}
                                       aria-hidden="true"
                                     />
@@ -133,7 +153,10 @@ export default function Layout() {
         <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6 pb-4">
           <div className="flex h-16 shrink-0 items-center">
             <ScaleIcon className="h-8 w-8 text-primary-600" />
-            <span className="ml-2 text-xl font-bold text-gray-900">Legal Bridge</span>
+            <span className="ml-2 text-xl font-bold text-gray-900">
+              Legal Bridge
+            </span>
+            {/* <img className="block w-full h-[150px]" src={legal_logo} alt="logo" /> */}
           </div>
           <nav className="flex flex-1 flex-col">
             <ul role="list" className="flex flex-1 flex-col gap-y-7">
@@ -146,9 +169,9 @@ export default function Layout() {
                         className={({ isActive }) =>
                           clsx(
                             isActive
-                              ? 'bg-primary-50 text-primary-600'
-                              : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50',
-                            'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
+                              ? "bg-primary-50 text-primary-600"
+                              : "text-gray-700 hover:text-primary-600 hover:bg-gray-50",
+                            "group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold"
                           )
                         }
                       >
@@ -156,8 +179,10 @@ export default function Layout() {
                           <>
                             <item.icon
                               className={clsx(
-                                isActive ? 'text-primary-600' : 'text-gray-400 group-hover:text-primary-600',
-                                'h-6 w-6 shrink-0'
+                                isActive
+                                  ? "text-primary-600"
+                                  : "text-gray-400 group-hover:text-primary-600",
+                                "h-6 w-6 shrink-0"
                               )}
                               aria-hidden="true"
                             />
@@ -171,8 +196,10 @@ export default function Layout() {
               </li>
               <li className="mt-auto">
                 <div className="text-xs text-gray-500 text-center">
-                  Shartnomalar tahlili tizimi
+                  <span className="text-yellow-600">"Ko'prikqurilish AJ"</span>{" "}
+                  tomonidan ishlab chiqilgan
                 </div>
+                <div></div>
               </li>
             </ul>
           </nav>
@@ -199,15 +226,25 @@ export default function Layout() {
             <div className="flex flex-1"></div>
             <div className="flex items-center gap-x-4 lg:gap-x-6">
               {/* Profile dropdown */}
+
               <Menu as="div" className="relative">
                 <Menu.Button className="-m-1.5 flex items-center p-1.5">
-                  <span className="sr-only">Open user menu</span>
+                  {/* <span className="sr-only">Open user menu</span>
                   <UserCircleIcon className="h-8 w-8 text-gray-400" />
                   <span className="hidden lg:flex lg:items-center">
-                    <span className="ml-4 text-sm font-semibold leading-6 text-gray-900" aria-hidden="true">
+                    <span
+                      className="ml-4 text-sm font-semibold leading-6 text-gray-900"
+                      aria-hidden="true"
+                    >
                       {user?.first_name} {user?.last_name}
                     </span>
-                  </span>
+                  </span> */}
+                  <Space size={16} wrap>
+                    <Avatar
+                      style={{ backgroundColor: "#87d068" }}
+                      icon={user?.full_name?.charAt(0)}
+                    />
+                  </Space>
                 </Menu.Button>
                 <Transition
                   as={Fragment}
@@ -218,28 +255,29 @@ export default function Layout() {
                   leaveFrom="transform opacity-100 scale-100"
                   leaveTo="transform opacity-0 scale-95"
                 >
-                  <Menu.Items className="absolute right-0 z-10 mt-2.5 w-48 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-gray-900/5 focus:outline-none">
+                  <Menu.Items className="absolute flex flex-col right-0 z-10 mt-2.5 w-48 origin-top-right rounded-md bg-white shadow-lg shadow-[0_-4px_10px_rgba(0,0,0,0.08)]">
                     <Menu.Item>
                       {({ active }) => (
                         <NavLink
                           to="/profile"
                           className={clsx(
-                            active ? 'bg-gray-50' : '',
-                            'block px-3 py-1 text-sm leading-6 text-gray-900'
+                            active ? "bg-gray-100" : "",
+                            "block px-3 text-sm leading-6 text-gray-900 border-b-2 py-2 hover:bg-gray-100 cursor-pointer rounded-t-md "
                           )}
                         >
                           <UserCircleIcon className="inline h-5 w-5 mr-2" />
-                          Profil
+                          Profile
                         </NavLink>
                       )}
                     </Menu.Item>
+
                     <Menu.Item>
                       {({ active }) => (
                         <button
                           onClick={handleLogout}
                           className={clsx(
-                            active ? 'bg-gray-50' : '',
-                            'block w-full text-left px-3 py-1 text-sm leading-6 text-gray-900'
+                            active ? "bg-gray-50" : "",
+                            "block w-full text-left px-3 text-sm leading-6 text-gray-900 hover:bg-gray-100 cursor-pointer py-2 rounded-b-md"
                           )}
                         >
                           <ArrowLeftOnRectangleIcon className="inline h-5 w-5 mr-2" />
@@ -262,5 +300,5 @@ export default function Layout() {
         </main>
       </div>
     </div>
-  )
+  );
 }
