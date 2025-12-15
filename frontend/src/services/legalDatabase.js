@@ -59,9 +59,10 @@ export const legalDatabaseService = {
     return response.data
   },
   
-  // Download template
-  downloadTemplate: async (id) => {
+  // Download template as PDF
+  downloadTemplate: async (id, lang = 'uz_latin') => {
     const response = await api.get(`/api/v1/legal/templates/${id}/download/`, {
+      params: { lang },
       responseType: 'blob',
     })
     return response.data

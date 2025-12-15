@@ -2,6 +2,8 @@
   "templates": [
     {
       "name": "Mehnat shartnomasi",
+      "name_ru": "Трудовой договор",
+      "name_cyrillic": "Меҳнат шартномаси",
       "contract_type": "employment",
       "description": "Ish beruvchi va xodim o'rtasidagi mehnat munosabatlarini tartibga soluvchi shartnoma",
       "related_laws": ["MK", "FK"],
@@ -21,6 +23,8 @@
     },
     {
       "name": "Ijara shartnomasi (ko'chmas mulk)",
+      "name_ru": "Договор аренды (недвижимость)",
+      "name_cyrillic": "Ижара шартномаси (кўчмас мулк)",
       "contract_type": "lease",
       "description": "Ko'chmas mulkni ijaraga berish shartnomasi",
       "related_laws": ["FK"],
@@ -39,6 +43,8 @@
     },
     {
       "name": "Oldi-sotdi shartnomasi",
+      "name_ru": "Договор купли-продажи",
+      "name_cyrillic": "Олди-сотди шартномаси",
       "contract_type": "sale",
       "description": "Tovarlarni sotish va sotib olish shartnomasi",
       "related_laws": ["FK", "IHH"],
@@ -56,6 +62,8 @@
     },
     {
       "name": "Xizmat ko'rsatish shartnomasi",
+      "name_ru": "Договор оказания услуг",
+      "name_cyrillic": "Хизмат кўрсатиш шартномаси",
       "contract_type": "service",
       "description": "Haq evaziga xizmat ko'rsatish shartnomasi",
       "related_laws": ["FK"],
@@ -73,6 +81,8 @@
     },
     {
       "name": "Pudrat shartnomasi",
+      "name_ru": "Договор подряда",
+      "name_cyrillic": "Пудрат шартномаси",
       "contract_type": "contract",
       "description": "Ish bajarish (qurilish, ta'mirlash va boshqalar) shartnomasi",
       "related_laws": ["FK"],
@@ -92,6 +102,8 @@
     },
     {
       "name": "Yetkazib berish shartnomasi",
+      "name_ru": "Договор поставки",
+      "name_cyrillic": "Етказиб бериш шартномаси",
       "contract_type": "supply",
       "description": "Tovarlarni muntazam yetkazib berish shartnomasi",
       "related_laws": ["FK"],

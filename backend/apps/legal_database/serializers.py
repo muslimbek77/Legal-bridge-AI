@@ -66,16 +66,18 @@ class LawDetailSerializer(serializers.ModelSerializer):
     """Serializer for law detail."""
     
     chapters = LawChapterSerializer(many=True, read_only=True)
+    articles = LawArticleSerializer(many=True, read_only=True)
     law_type_display = serializers.CharField(source='get_law_type_display', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
+    articles_count = serializers.IntegerField(source='articles.count', read_only=True)
     
     class Meta:
         model = Law
         fields = [
             'id', 'name', 'name_ru', 'short_name', 'law_type', 'law_type_display',
             'number', 'adoption_date', 'effective_date', 'status', 'status_display',
-            'description', 'source_url', 'is_indexed', 'chapters',
-            'created_at', 'updated_at'
+            'description', 'source_url', 'is_indexed', 'chapters', 'articles',
+            'articles_count', 'created_at', 'updated_at'
         ]
 
 
@@ -87,8 +89,9 @@ class ContractTemplateSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContractTemplate
         fields = [
-            'id', 'name', 'contract_type', 'description', 'template_file',
-            'template_text', 'required_sections', 'related_laws', 'is_approved',
+            'id', 'name', 'name_ru', 'name_cyrillic', 'contract_type', 'description', 
+            'template_file', 'template_text', 'template_text_ru', 'template_text_cyrillic',
+            'required_sections', 'related_laws', 'is_approved',
             'created_at', 'updated_at'
         ]
 

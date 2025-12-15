@@ -223,12 +223,19 @@ class ContractTemplate(models.Model):
     Standard contract templates for reference.
     """
     
-    name = models.CharField('Nomi', max_length=500)
+    name = models.CharField('Nomi (lotin)', max_length=500)
+    name_ru = models.CharField('Nomi (rus)', max_length=500, blank=True)
+    name_cyrillic = models.CharField('Nomi (kirill)', max_length=500, blank=True)
+    
     contract_type = models.CharField('Shartnoma turi', max_length=50)
     description = models.TextField('Tavsif', blank=True)
     
     template_file = models.FileField('Shablon fayli', upload_to='templates/', null=True, blank=True)
-    template_text = models.TextField('Shablon matni', blank=True)
+    
+    # Template texts in different languages
+    template_text = models.TextField('Shablon matni (lotin)', blank=True)
+    template_text_ru = models.TextField('Shablon matni (rus)', blank=True)
+    template_text_cyrillic = models.TextField('Shablon matni (kirill)', blank=True)
     
     # Required sections
     required_sections = models.JSONField('Majburiy bo\'limlar', default=list)

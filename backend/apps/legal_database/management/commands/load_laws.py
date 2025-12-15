@@ -146,6 +146,10 @@ class Command(BaseCommand):
                     'contract_type': template_data['contract_type'],
                     'description': template_data.get('description', ''),
                     'template_text': template_data.get('template_text', ''),
+                    'template_text_ru': template_data.get('template_text_ru', ''),
+                    'template_text_cyrillic': template_data.get('template_text_cyrillic', ''),
+                    'name_ru': template_data.get('name_ru', ''),
+                    'name_cyrillic': template_data.get('name_cyrillic', ''),
                     'required_sections': template_data.get('required_sections', []),
                     'is_approved': template_data.get('is_approved', True),
                 }
