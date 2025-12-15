@@ -23,11 +23,14 @@ class ComplianceIssueSerializer(serializers.ModelSerializer):
     issue_type_display = serializers.CharField(source='get_issue_type_display', read_only=True)
     severity_display = serializers.CharField(source='get_severity_display', read_only=True)
     resolved_by_name = serializers.CharField(source='resolved_by.get_full_name', read_only=True)
+    contract_id = serializers.UUIDField(source='analysis.contract.id', read_only=True)
+    contract_title = serializers.CharField(source='analysis.contract.title', read_only=True)
     
     class Meta:
         model = ComplianceIssue
         fields = [
-            'id', 'issue_type', 'issue_type_display', 'severity', 'severity_display',
+            'id', 'analysis', 'contract_id', 'contract_title',
+            'issue_type', 'issue_type_display', 'severity', 'severity_display',
             'title', 'description', 'section_reference', 'clause_reference',
             'text_excerpt', 'law_name', 'law_article', 'law_text',
             'suggestion', 'suggested_text', 'is_resolved', 'resolved_by',

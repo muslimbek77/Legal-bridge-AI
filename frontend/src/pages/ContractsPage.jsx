@@ -226,7 +226,7 @@ export default function ContractsPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {contract.counterparty_name}
+                      {contract.counterparty || contract.party_b || contract.party_a || 'Noma\'lum'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <ContractStatusBadge status={contract.status} />

@@ -145,6 +145,64 @@ class ComplianceIssueViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['analysis', 'issue_type', 'severity', 'is_resolved']
     
+    def get_queryset(self):
+        user = self.request.user
+        queryset = ComplianceIssue.objects.select_related('analysis', 'analysis__contract')
+        
+        if not user.is_admin:
+            queryset = queryset.filter(
+                analysis__contract__uploaded_by=user
+            ) | queryset.filter(
+                analysis__contract__assigned_to=user
+            )
+        
+        return queryset.distinct().order_by('-created_at')
+    
+    @action(detail=False, methods=['get'])
+    def statistics(self, request):
+        """Get compliance issues statistics."""
+        from django.db.models import Count
+        from django.db.models.functions import TruncMonth
+        from datetime import datetime, timedelta
+        
+        queryset = self.get_queryset()
+        
+        # Severity bo'yicha
+        by_severity = {}
+        for severity in ComplianceIssue.Severity.choices:
+            by_severity[severity[0]] = queryset.filter(severity=severity[0]).count()
+        
+        # Type bo'yicha
+        by_type = {}
+        for issue_type in ComplianceIssue.IssueType.choices:
+            by_type[issue_type[0]] = queryset.filter(issue_type=issue_type[0]).count()
+        
+        # Oylik trend (so'nggi 6 oy)
+        six_months_ago = datetime.now() - timedelta(days=180)
+        monthly_data = queryset.filter(created_at__gte=six_months_ago).annotate(
+            month=TruncMonth('created_at')
+        ).values('month', 'severity').annotate(count=Count('id')).order_by('month')
+        
+        month_names = ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyun', 'Iyul', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek']
+        monthly_trend = {}
+        for item in monthly_data:
+            if item['month']:
+                month_name = month_names[item['month'].month - 1]
+                if month_name not in monthly_trend:
+                    monthly_trend[month_name] = {'month': month_name, 'critical': 0, 'major': 0, 'minor': 0, 'info': 0}
+                monthly_trend[month_name][item['severity']] = item['count']
+        
+        stats = {
+            'total': queryset.count(),
+            'resolved': queryset.filter(is_resolved=True).count(),
+            'unresolved': queryset.filter(is_resolved=False).count(),
+            'by_severity': by_severity,
+            'by_type': by_type,
+            'monthly_trend': list(monthly_trend.values()),
+        }
+        
+        return Response(stats)
+    
     @action(detail=True, methods=['post'])
     def resolve(self, request, pk=None):
         """Mark issue as resolved."""

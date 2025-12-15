@@ -182,31 +182,105 @@ class ContractViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['get'], permission_classes=[AllowAny])
     def stats(self, request):
-        """Get contract statistics."""
+        """Get contract statistics for dashboard."""
+        from apps.analysis.models import AnalysisResult, ComplianceIssue
+        from django.db.models import Avg, Count
+        from django.db.models.functions import TruncMonth
+        from datetime import datetime, timedelta
+        
         # For unauthenticated users, show total stats
         if request.user.is_authenticated:
             queryset = self.get_queryset()
         else:
             queryset = Contract.objects.all()
         
-        stats = {
-            'total': queryset.count(),
-            'by_status': {},
-            'by_type': {},
-            'recent_uploads': list(queryset.order_by('-created_at')[:5].values(
-                'id', 'title', 'status', 'created_at'
-            ))
-        }
+        # Asosiy statistika
+        total = queryset.count()
         
+        # Status bo'yicha
+        by_status = {}
         for status_choice in Contract.Status.choices:
-            stats['by_status'][status_choice[0]] = queryset.filter(
-                status=status_choice[0]
-            ).count()
+            by_status[status_choice[0]] = queryset.filter(status=status_choice[0]).count()
         
+        # Tur bo'yicha (pie chart uchun)
+        by_type = []
+        type_labels = dict(Contract.ContractType.choices)
         for type_choice in Contract.ContractType.choices:
-            stats['by_type'][type_choice[0]] = queryset.filter(
-                contract_type=type_choice[0]
-            ).count()
+            count = queryset.filter(contract_type=type_choice[0]).count()
+            if count > 0:
+                by_type.append({
+                    'name': type_labels[type_choice[0]],
+                    'value': count,
+                    'type': type_choice[0]
+                })
+        
+        # O'rtacha risk ball va compliance
+        analyses = AnalysisResult.objects.filter(contract__in=queryset, status='completed')
+        avg_risk = analyses.aggregate(avg=Avg('overall_score'))['avg'] or 0
+        
+        # Kritik muammolar soni
+        critical_issues = ComplianceIssue.objects.filter(
+            analysis__contract__in=queryset,
+            severity='critical',
+            is_resolved=False
+        ).count()
+        
+        # Risk taqsimoti (pie chart uchun)
+        risk_distribution = [
+            {'name': 'Past (0-25)', 'value': analyses.filter(overall_score__lte=25).count(), 'color': '#10B981'},
+            {'name': "O'rta (25-50)", 'value': analyses.filter(overall_score__gt=25, overall_score__lte=50).count(), 'color': '#F59E0B'},
+            {'name': 'Yuqori (50-75)', 'value': analyses.filter(overall_score__gt=50, overall_score__lte=75).count(), 'color': '#F97316'},
+            {'name': 'Kritik (75-100)', 'value': analyses.filter(overall_score__gt=75).count(), 'color': '#EF4444'},
+        ]
+        
+        # Oylik tahlillar (so'nggi 6 oy)
+        six_months_ago = datetime.now() - timedelta(days=180)
+        monthly_data = queryset.filter(created_at__gte=six_months_ago).annotate(
+            month=TruncMonth('created_at')
+        ).values('month').annotate(count=Count('id')).order_by('month')
+        
+        month_names = ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyun', 'Iyul', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek']
+        monthly_analysis = []
+        for item in monthly_data:
+            if item['month']:
+                monthly_analysis.append({
+                    'month': month_names[item['month'].month - 1],
+                    'count': item['count']
+                })
+        
+        # So'nggi shartnomalar (risk_score bilan)
+        recent_contracts_qs = queryset.order_by('-created_at')[:5]
+        recent_contracts = []
+        for contract in recent_contracts_qs:
+            latest_analysis = contract.analyses.filter(status='completed').order_by('-created_at').first()
+            recent_contracts.append({
+                'id': str(contract.id),
+                'title': contract.title,
+                'status': contract.status,
+                'contract_type': contract.contract_type,
+                'created_at': contract.created_at,
+                'risk_score': latest_analysis.overall_score if latest_analysis else None,
+                'counterparty': contract.party_b or contract.party_a or None,
+            })
+        
+        # Muvofiqlik darajasi
+        if analyses.exists():
+            compliant_count = analyses.filter(overall_score__lte=30).count()
+            compliance_rate = round((compliant_count / analyses.count()) * 100)
+        else:
+            compliance_rate = 0
+        
+        stats = {
+            'total': total,
+            'by_status': by_status,
+            'by_type': by_type,
+            'average_risk_score': round(avg_risk),
+            'critical_issues': critical_issues,
+            'compliance_rate': compliance_rate,
+            'risk_distribution': risk_distribution,
+            'monthly_analysis': monthly_analysis,
+            'recent_contracts': recent_contracts,
+        }
         
         return Response(stats)
 

@@ -72,17 +72,30 @@ class ContractListSerializer(serializers.ModelSerializer):
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     contract_type_display = serializers.CharField(source='get_contract_type_display', read_only=True)
     comments_count = serializers.IntegerField(source='comments.count', read_only=True)
+    risk_score = serializers.SerializerMethodField()
+    counterparty = serializers.SerializerMethodField()
     
     class Meta:
         model = Contract
         fields = [
             'id', 'contract_number', 'title', 'original_filename',
             'contract_type', 'contract_type_display', 'language',
-            'party_a', 'party_b', 'contract_date', 'total_amount', 'currency',
+            'party_a', 'party_b', 'counterparty', 'contract_date', 'total_amount', 'currency',
             'status', 'status_display', 'uploaded_by', 'uploaded_by_name',
-            'assigned_to', 'assigned_to_name', 'comments_count',
+            'assigned_to', 'assigned_to_name', 'comments_count', 'risk_score',
             'created_at', 'analyzed_at'
         ]
+    
+    def get_risk_score(self, obj):
+        """Get risk score from latest analysis."""
+        latest_analysis = obj.analyses.filter(status='completed').order_by('-created_at').first()
+        if latest_analysis:
+            return latest_analysis.overall_score
+        return None
+    
+    def get_counterparty(self, obj):
+        """Get counterparty name (party_b or party_a if party_b is empty)."""
+        return obj.party_b if obj.party_b else obj.party_a
 
 
 class ContractDetailSerializer(serializers.ModelSerializer):
