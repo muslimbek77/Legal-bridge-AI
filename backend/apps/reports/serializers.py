@@ -11,7 +11,7 @@ class ReportSerializer(serializers.ModelSerializer):
     
     contract_title = serializers.CharField(source='contract.title', read_only=True)
     report_type_display = serializers.CharField(source='get_report_type_display', read_only=True)
-    format_display = serializers.CharField(source='get_format_display', read_only=True)
+    format_display = serializers.CharField(source='get_report_format_display', read_only=True)
     generated_by_name = serializers.CharField(source='generated_by.get_full_name', read_only=True)
     risk_score = serializers.SerializerMethodField()
     
@@ -19,7 +19,7 @@ class ReportSerializer(serializers.ModelSerializer):
         model = Report
         fields = [
             'id', 'contract', 'contract_title', 'analysis',
-            'report_type', 'report_type_display', 'format', 'format_display',
+            'report_type', 'report_type_display', 'report_format', 'format_display',
             'title', 'file', 'file_size', 'generated_by', 'generated_by_name',
             'created_at', 'risk_score'
         ]
@@ -41,4 +41,4 @@ class GenerateReportSerializer(serializers.Serializer):
     
     contract_id = serializers.UUIDField()
     report_type = serializers.ChoiceField(choices=Report.ReportType.choices)
-    format = serializers.ChoiceField(choices=Report.Format.choices, default='pdf')
+    report_format = serializers.ChoiceField(choices=Report.Format.choices, default='pdf')
