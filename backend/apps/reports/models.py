@@ -52,7 +52,7 @@ class Report(models.Model):
         choices=ReportType.choices,
         default=ReportType.FULL
     )
-    format = models.CharField(
+    report_format = models.CharField(
         'Format',
         max_length=10,
         choices=Format.choices,

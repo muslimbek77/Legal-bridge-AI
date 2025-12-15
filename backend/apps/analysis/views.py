@@ -142,8 +142,10 @@ class ComplianceIssueViewSet(viewsets.ModelViewSet):
     queryset = ComplianceIssue.objects.all()
     serializer_class = ComplianceIssueSerializer
     permission_classes = [IsAuthenticated]
-    filter_backends = [DjangoFilterBackend]
+    from rest_framework import filters
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ['analysis', 'issue_type', 'severity', 'is_resolved']
+    search_fields = ['title', 'description']
     
     def get_queryset(self):
         user = self.request.user
