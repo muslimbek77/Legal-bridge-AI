@@ -237,7 +237,7 @@ class LegalRAG:
         
         # Build context from documents
         context = "\n\n".join([
-            f"Qonun: {doc.get('metadata', {}).get('law_name', 'Noma\'lum')}\n"
+            f"Qonun: {doc.get('metadata', {}).get('law_name', "Noma'lum")}\n"
             f"Modda: {doc.get('metadata', {}).get('article_number', '')}\n"
             f"Matn: {doc['text']}"
             for doc in context_docs
