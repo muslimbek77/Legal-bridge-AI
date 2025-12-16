@@ -1,95 +1,98 @@
-import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import {
   MagnifyingGlassIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon,
   DocumentTextIcon,
   DocumentMagnifyingGlassIcon,
-} from '@heroicons/react/24/outline'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
-import LoadingSpinner from '../components/LoadingSpinner'
-import ComplianceIssueBadge from '../components/ComplianceIssueBadge'
-import analysisService from '../services/analysis'
+} from "@heroicons/react/24/outline";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
+import LoadingSpinner from "../components/LoadingSpinner";
+import ComplianceIssueBadge from "../components/ComplianceIssueBadge";
+import analysisService from "../services/analysis";
 
-const COLORS = ['#EF4444', '#F97316', '#F59E0B', '#3B82F6']
+const COLORS = ["#EF4444", "#F97316", "#F59E0B", "#3B82F6"];
 
 export default function AnalysisPage() {
-  const [severityFilter, setSeverityFilter] = useState('')
-  const [statusFilter, setStatusFilter] = useState('')
-  const [searchTerm, setSearchTerm] = useState('')
+  const [severityFilter, setSeverityFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // Issues ro'yxati
   const { data: issues, isLoading } = useQuery({
-    queryKey: ['compliance-issues', severityFilter, statusFilter, searchTerm],
-    queryFn: () => analysisService.getComplianceIssues({
-      severity: severityFilter,
-      is_resolved: statusFilter,
-      search: searchTerm,
-    }),
-  })
+    queryKey: ["compliance-issues", severityFilter, statusFilter, searchTerm],
+    queryFn: () =>
+      analysisService.getComplianceIssues({
+        severity: severityFilter,
+        status: statusFilter,
+        search: searchTerm,
+      }),
+  });
 
-  // Statistics API'dan ma'lumot olish
-  const { data: statistics } = useQuery({
-    queryKey: ['analysis-statistics'],
-    queryFn: () => analysisService.getStatistics(),
-  })
+  // console.log("issues", issues);
 
   // Haqiqiy ma'lumotlarni hisoblash
-  const issuesList = issues?.results || []
-  const hasIssues = issuesList.length > 0
+  const issuesList = issues?.results || [];
+  const hasIssues = issuesList.length > 0;
 
-  // API'dan kelgan statistika
+  // Statistika hisoblash
   const stats = {
-    critical_count: statistics?.by_severity?.critical || 0,
-    high_count: statistics?.by_severity?.high || 0,
-    medium_count: statistics?.by_severity?.medium || 0,
-    low_count: statistics?.by_severity?.low || 0,
-    info_count: statistics?.by_severity?.info || 0,
-    resolved_count: statistics?.resolved || 0,
-  }
+    critical_count: issuesList.filter((i) => i.severity === "critical").length,
+    major_count: issuesList.filter((i) => i.severity === "major").length,
+    minor_count: issuesList.filter((i) => i.severity === "minor").length,
+    info_count: issuesList.filter((i) => i.severity === "info").length,
+    resolved_count: issuesList.filter((i) => i.status === "resolved").length,
+  };
 
   // Bo'sh holatdagi ma'lumotlar
   const emptyStats = {
     severity_distribution: [
-      { name: 'Kritik', value: 0, color: '#EF4444' },
-      { name: 'Yuqori', value: 0, color: '#F97316' },
-      { name: 'O\'rta', value: 0, color: '#F59E0B' },
-      { name: 'Past', value: 0, color: '#10B981' },
-      { name: 'Ma\'lumot', value: 0, color: '#3B82F6' },
+      { name: "Kritik", value: 0, color: "#EF4444" },
+      { name: "Jiddiy", value: 0, color: "#F97316" },
+      { name: "Kichik", value: 0, color: "#F59E0B" },
+      { name: "Ma'lumot", value: 0, color: "#3B82F6" },
     ],
     monthly_trend: [
-      { month: 'Yan', critical: 0, high: 0, medium: 0 },
-      { month: 'Fev', critical: 0, high: 0, medium: 0 },
-      { month: 'Mar', critical: 0, high: 0, medium: 0 },
-      { month: 'Apr', critical: 0, high: 0, medium: 0 },
-      { month: 'May', critical: 0, high: 0, medium: 0 },
-      { month: 'Iyun', critical: 0, high: 0, medium: 0 },
+      { month: "Yan", critical: 0, major: 0, minor: 0 },
+      { month: "Fev", critical: 0, major: 0, minor: 0 },
+      { month: "Mar", critical: 0, major: 0, minor: 0 },
+      { month: "Apr", critical: 0, major: 0, minor: 0 },
+      { month: "May", critical: 0, major: 0, minor: 0 },
+      { month: "Iyun", critical: 0, major: 0, minor: 0 },
     ],
-  }
+  };
 
   // Haqiqiy severity distribution
-  const severityDistribution = [
-    { name: 'Kritik', value: stats.critical_count, color: '#EF4444' },
-    { name: 'Yuqori', value: stats.high_count, color: '#F97316' },
-    { name: 'O\'rta', value: stats.medium_count, color: '#F59E0B' },
-    { name: 'Past', value: stats.low_count, color: '#10B981' },
-    { name: 'Ma\'lumot', value: stats.info_count, color: '#3B82F6' },
-  ]
+  const severityDistribution = hasIssues
+    ? [
+        { name: "Kritik", value: stats.critical_count, color: "#EF4444" },
+        { name: "Jiddiy", value: stats.major_count, color: "#F97316" },
+        { name: "Kichik", value: stats.minor_count, color: "#F59E0B" },
+        { name: "Ma'lumot", value: stats.info_count, color: "#3B82F6" },
+      ]
+    : emptyStats.severity_distribution;
 
-  // Oylik trend - API'dan yoki bo'sh
-  const monthlyTrend = statistics?.monthly_trend?.length > 0 
-    ? statistics.monthly_trend 
-    : emptyStats.monthly_trend
+  // if (isLoading) {
+  //   return (
+  //     <div className="flex items-center justify-center h-64">
+  //       <LoadingSpinner size="lg" />
+  //     </div>
+  //   );
+  // }
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <LoadingSpinner size="lg" />
-      </div>
-    )
-  }
+  // console.log("stats,", stats);
 
   return (
     <div className="space-y-6">
@@ -97,12 +100,13 @@ export default function AnalysisPage() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Tahlil</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Barcha shartnomalar bo'yicha muvofiqlik muammolari va tahlil natijalari
+          Barcha shartnomalar bo'yicha muvofiqlik muammolari va tahlil
+          natijalari
         </p>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <div className="card p-5">
           <div className="flex items-center">
             <div className="flex-shrink-0 rounded-md p-3 bg-red-500">
@@ -110,7 +114,9 @@ export default function AnalysisPage() {
             </div>
             <div className="ml-5">
               <p className="text-sm font-medium text-gray-500">Kritik</p>
-              <p className="text-2xl font-semibold text-gray-900">{stats.critical_count}</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {stats.critical_count}
+              </p>
             </div>
           </div>
         </div>
@@ -120,8 +126,10 @@ export default function AnalysisPage() {
               <ExclamationTriangleIcon className="h-6 w-6 text-white" />
             </div>
             <div className="ml-5">
-              <p className="text-sm font-medium text-gray-500">Yuqori</p>
-              <p className="text-2xl font-semibold text-gray-900">{stats.high_count}</p>
+              <p className="text-sm font-medium text-gray-500">Jiddiy</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {stats.major_count}
+              </p>
             </div>
           </div>
         </div>
@@ -131,19 +139,10 @@ export default function AnalysisPage() {
               <ExclamationTriangleIcon className="h-6 w-6 text-white" />
             </div>
             <div className="ml-5">
-              <p className="text-sm font-medium text-gray-500">O'rta</p>
-              <p className="text-2xl font-semibold text-gray-900">{stats.medium_count}</p>
-            </div>
-          </div>
-        </div>
-        <div className="card p-5">
-          <div className="flex items-center">
-            <div className="flex-shrink-0 rounded-md p-3 bg-blue-500">
-              <ExclamationTriangleIcon className="h-6 w-6 text-white" />
-            </div>
-            <div className="ml-5">
-              <p className="text-sm font-medium text-gray-500">Ma'lumot</p>
-              <p className="text-2xl font-semibold text-gray-900">{stats.info_count}</p>
+              <p className="text-sm font-medium text-gray-500">Kichik</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {stats.minor_count}
+              </p>
             </div>
           </div>
         </div>
@@ -154,7 +153,9 @@ export default function AnalysisPage() {
             </div>
             <div className="ml-5">
               <p className="text-sm font-medium text-gray-500">Hal qilingan</p>
-              <p className="text-2xl font-semibold text-gray-900">{stats.resolved_count}</p>
+              <p className="text-2xl font-semibold text-gray-900">
+                {stats.resolved_count}
+              </p>
             </div>
           </div>
         </div>
@@ -164,8 +165,10 @@ export default function AnalysisPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Severity Distribution */}
         <div className="card p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Muammolar taqsimoti</h3>
-          {(stats.critical_count + stats.high_count + stats.medium_count + stats.low_count + stats.info_count) > 0 ? (
+          <h3 className="text-lg font-medium text-gray-900 mb-4">
+            Muammolar taqsimoti
+          </h3>
+          {hasIssues ? (
             <>
               <ResponsiveContainer width="100%" height={250}>
                 <PieChart>
@@ -185,10 +188,13 @@ export default function AnalysisPage() {
                   <Tooltip />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="flex justify-center gap-4 mt-4 flex-wrap">
+              <div className="flex justify-center gap-4 mt-4">
                 {severityDistribution.map((item) => (
                   <div key={item.name} className="flex items-center text-sm">
-                    <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: item.color }} />
+                    <div
+                      className="w-3 h-3 rounded-full mr-2"
+                      style={{ backgroundColor: item.color }}
+                    />
                     {item.name}: {item.value}
                   </div>
                 ))}
@@ -204,16 +210,23 @@ export default function AnalysisPage() {
 
         {/* Monthly Trend */}
         <div className="card p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Oylik trend</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">
+            Oylik trend
+          </h3>
           <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={monthlyTrend}>
+            <BarChart data={emptyStats.monthly_trend}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
               <Tooltip />
-              <Bar dataKey="critical" name="Kritik" fill="#EF4444" stackId="a" />
-              <Bar dataKey="high" name="Yuqori" fill="#F97316" stackId="a" />
-              <Bar dataKey="medium" name="O'rta" fill="#F59E0B" stackId="a" />
+              <Bar
+                dataKey="critical"
+                name="Kritik"
+                fill="#EF4444"
+                stackId="a"
+              />
+              <Bar dataKey="major" name="Jiddiy" fill="#F97316" stackId="a" />
+              <Bar dataKey="minor" name="Kichik" fill="#F59E0B" stackId="a" />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -270,12 +283,16 @@ export default function AnalysisPage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <ComplianceIssueBadge severity={issue.severity} />
-                      {issue.status === 'resolved' && (
+                      {issue.status === "resolved" && (
                         <span className="badge-success">Hal qilindi</span>
                       )}
                     </div>
-                    <h4 className="text-sm font-medium text-gray-900">{issue.title}</h4>
-                    <p className="mt-1 text-sm text-gray-600">{issue.description}</p>
+                    <h4 className="text-sm font-medium text-gray-900">
+                      {issue.title}
+                    </h4>
+                    <p className="mt-1 text-sm text-gray-600">
+                      {issue.description}
+                    </p>
                     <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
                       <Link
                         to={`/contracts/${issue.contract_id}`}
@@ -294,8 +311,13 @@ export default function AnalysisPage() {
         ) : (
           <div className="flex flex-col items-center justify-center py-16 text-gray-400">
             <DocumentMagnifyingGlassIcon className="h-20 w-20 mb-4" />
-            <p className="text-lg font-medium text-gray-600 mb-2">Hali muammolar topilmagan</p>
-            <p className="text-sm text-gray-500 mb-6">Shartnoma yuklang va tahlil qiling - muammolar shu yerda ko'rsatiladi</p>
+            <p className="text-lg font-medium text-gray-600 mb-2">
+              Hali muammolar topilmagan
+            </p>
+            <p className="text-sm text-gray-500 mb-6">
+              Shartnoma yuklang va tahlil qiling - muammolar shu yerda
+              ko'rsatiladi
+            </p>
             <Link to="/contracts/upload" className="btn-primary">
               Shartnoma yuklash
             </Link>
@@ -303,5 +325,5 @@ export default function AnalysisPage() {
         )}
       </div>
     </div>
-  )
+  );
 }

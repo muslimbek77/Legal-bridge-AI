@@ -27,6 +27,8 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 SECRET_KEY = env('SECRET_KEY', default='django-insecure-change-this-in-production')
 DEBUG = env('DEBUG')
 ALLOWED_HOSTS = env('ALLOWED_HOSTS')
+# Ngrok domenini ruxsat berilgan hostlarga qo'shish
+ALLOWED_HOSTS += ['6383cce079a4.ngrok-free.app']
 
 # Application definition
 DJANGO_APPS = [
@@ -184,15 +186,19 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True,
 }
 
+
 # CORS
 CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
+    'https://legal-bridge-ai-frontend.vercel.app',
     'http://localhost:3000',
     'http://localhost:3001',
     'http://localhost:5173',
     'http://127.0.0.1:3000',
     'http://127.0.0.1:3001',
     'http://127.0.0.1:5173',
+    'https://75cd2482e9b6.ngrok-free.app',
 ])
+CORS_ALLOWED_ORIGIN_REGEXES = [r"^https:\/\/[a-z0-9\-]+\.ngrok\-free\.app$"]
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = True  # Development uchun
 

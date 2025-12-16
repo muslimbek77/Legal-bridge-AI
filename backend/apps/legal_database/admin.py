@@ -64,3 +64,6 @@ class ContractTemplateAdmin(admin.ModelAdmin):
     search_fields = ['name', 'description']
     filter_horizontal = ['related_laws']
     readonly_fields = ['created_at', 'updated_at']
+    list_per_page = 25
+    date_hierarchy = 'created_at'
+    ordering = ['-created_at']

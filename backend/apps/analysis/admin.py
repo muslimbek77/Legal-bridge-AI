@@ -32,7 +32,11 @@ class AnalysisResultAdmin(admin.ModelAdmin):
         'created_at', 'completed_at'
     ]
     inlines = [ComplianceIssueInline, LawReferenceInline]
-    
+    list_per_page = 25
+    date_hierarchy = 'created_at'
+    ordering = ['-created_at']
+    autocomplete_fields = ['contract']
+    list_select_related = True
     fieldsets = (
         ('Asosiy', {
             'fields': ('id', 'contract', 'status')

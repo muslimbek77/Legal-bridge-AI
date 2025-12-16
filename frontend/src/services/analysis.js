@@ -50,7 +50,7 @@ export const analysisService = {
   
   // Get statistics
   getStatistics: async () => {
-    const response = await api.get('/api/v1/analysis/issues/statistics/')
+    const response = await api.get('/api/v1/analysis/statistics/')
     return response.data
   },
 }

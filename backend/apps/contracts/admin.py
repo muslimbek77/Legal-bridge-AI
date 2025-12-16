@@ -32,7 +32,11 @@ class ContractAdmin(admin.ModelAdmin):
         'file_size', 'created_at', 'updated_at', 'analyzed_at'
     ]
     inlines = [ContractSectionInline, ContractVersionInline]
-    
+    list_per_page = 25
+    date_hierarchy = 'created_at'
+    ordering = ['-created_at']
+    autocomplete_fields = ['uploaded_by', 'assigned_to']
+    list_select_related = True
     fieldsets = (
         ('Asosiy ma\'lumotlar', {
             'fields': ('id', 'contract_number', 'title', 'contract_type', 'language', 'status')
