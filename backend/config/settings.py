@@ -197,6 +197,7 @@ CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
     'http://127.0.0.1:3001',
     'http://127.0.0.1:5173',
     'https://75cd2482e9b6.ngrok-free.app',
+    'https://legal-bridge.kuprikqurilish.uz',
 ])
 CORS_ALLOWED_ORIGIN_REGEXES = [r"^https:\/\/[a-z0-9\-]+\.ngrok\-free\.app$"]
 CORS_ALLOW_CREDENTIALS = True
