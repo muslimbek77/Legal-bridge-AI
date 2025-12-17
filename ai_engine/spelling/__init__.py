@@ -601,7 +601,8 @@ class SpellingChecker:
                         line_number=line_num,
                         context=context,
                         language='uz-latn',
-                        description=f"Tutuq belgisi noto'g'ri: '`' o'rniga "'" ishlatilishi kerak"
+                        # Use double quotes around the apostrophe to avoid breaking the f-string quoting
+                        description="Tutuq belgisi noto'g'ri: '`' o'rniga \"'\" ishlatilishi kerak"
                     )
                     error_found = True
                 
