@@ -263,10 +263,10 @@ class ContractViewSet(viewsets.ModelViewSet):
                 'counterparty': contract.party_b or contract.party_a or None,
             })
         
-        # Muvofiqlik darajasi
+        # Muvofiqlik darajasi (o'rtacha compliance_score)
         if analyses.exists():
-            compliant_count = analyses.filter(overall_score__lte=30).count()
-            compliance_rate = round((compliant_count / analyses.count()) * 100)
+            avg_compliance = analyses.aggregate(avg=Avg('compliance_score'))['avg'] or 0
+            compliance_rate = round(avg_compliance)
         else:
             compliance_rate = 0
         

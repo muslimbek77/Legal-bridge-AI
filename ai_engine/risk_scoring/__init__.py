@@ -148,20 +148,20 @@ class RiskScoringEngine:
     def _calculate_compliance_score(self, issues: List[ComplianceIssue]) -> int:
         """Calculate compliance score based on issues."""
         score = 100
-        
+        total_deduction = 0
         for issue in issues:
-            # Get base deduction
-            deduction = self.SEVERITY_DEDUCTIONS.get(issue.severity, 5)
-            
-            # Apply issue type weight
-            weight = self.ISSUE_TYPE_WEIGHTS.get(issue.issue_type, 1.0)
-            
+            # Get base deduction (yumshatilgan)
+            deduction = self.SEVERITY_DEDUCTIONS.get(issue.severity, 3)
+            # Apply issue type weight (yumshatilgan)
+            weight = min(self.ISSUE_TYPE_WEIGHTS.get(issue.issue_type, 1.0), 1.0)
             # Calculate final deduction
             final_deduction = int(deduction * weight)
-            
-            score -= final_deduction
-        
-        return max(0, min(100, score))
+            total_deduction += final_deduction
+        # Har bir muammo uchun maksimal chegirma 40% dan oshmasin
+        max_total_deduction = 90
+        score -= min(total_deduction, max_total_deduction)
+        # Minimal muvofiqlik darajasi 10% dan past tushmaydi
+        return max(10, min(100, score))
     
     def _calculate_completeness_score(self, sections: List[Section], contract_type: str) -> int:
         """Calculate completeness score based on sections present."""
