@@ -23,6 +23,8 @@ class OCRProcessor:
     OCR processor for extracting text from documents.
     Uses Tesseract for OCR and pdfplumber for native PDF text.
     """
+    # Default tessdata path
+    DEFAULT_TESSDATA = '/usr/share/tesseract-ocr/5/tessdata'
     
     # Language codes for Tesseract
     LANGUAGE_MAP = {
@@ -39,7 +41,8 @@ class OCRProcessor:
         Args:
             languages: List of language codes to use for OCR
         """
-        self.languages = languages or ['uzb', 'uzb_latn', 'rus']
+        os.environ.setdefault('TESSDATA_PREFIX', self.DEFAULT_TESSDATA)
+        self.languages = self._build_language_list(languages or ['uzb', 'uzb_latn', 'rus'])
         self.tesseract_lang = '+'.join(self.languages)
         
         # Verify Tesseract is installed
@@ -47,6 +50,37 @@ class OCRProcessor:
             pytesseract.get_tesseract_version()
         except Exception as e:
             logger.warning(f"Tesseract not properly configured: {e}")
+
+    def _build_language_list(self, requested: List[str]) -> List[str]:
+        """Return only the languages that are installed."""
+        available = set()
+        try:
+            available = set(pytesseract.get_languages(config=''))
+        except Exception as e:
+            logger.warning(f"Unable to enumerate tesseract languages: {e}")
+
+        normalized = []
+        for lang in requested:
+            if lang in available:
+                normalized.append(lang)
+                continue
+            mapped = self.LANGUAGE_MAP.get(lang)
+            if mapped and mapped in available:
+                normalized.append(mapped)
+                continue
+            if lang in self.LANGUAGE_MAP.values() and lang in available:
+                normalized.append(lang)
+                continue
+            logger.debug(f"Tesseract language '{lang}' is not installed")
+
+        if not normalized:
+            fallback = 'eng'
+            logger.warning(
+                f"None of the requested OCR languages are available, falling back to '{fallback}'"
+            )
+            normalized = [fallback]
+
+        return normalized
     
     def extract_text_from_file(self, file_path: str) -> Tuple[str, float, bool]:
         """

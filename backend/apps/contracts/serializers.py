@@ -150,10 +150,10 @@ class ContractUploadSerializer(serializers.ModelSerializer):
                 'Faqat PDF, Word va rasm fayllari qabul qilinadi'
             )
         
-        # Validate file size (max 10MB)
-        if value.size > 10 * 1024 * 1024:
+        # Validate file size (max 50MB)
+        if value.size > 50 * 1024 * 1024:
             raise serializers.ValidationError(
-                'Fayl hajmi 10MB dan oshmasligi kerak'
+                'Fayl hajmi 50MB dan oshmasligi kerak'
             )
         
         return value

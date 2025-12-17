@@ -171,6 +171,16 @@ class ContractParser:
             r"(?i)итого\s*[:=]?\s*(\d[\d\s]*[\.,]?\d*)",
         ],
     }
+    PARTY_PATTERNS = {
+        'party_a_name': [
+            r"(?im)(?:1[-\s]?tomon|birinchi\s+tomon|buyurtmachi|zakazchik|заказчик)[\s:–-]+(.+?)(?=\n|$)",
+            r"(?im)taraflar\s*\(birinchi\s+tomoni\)[:\s]+(.+?)(?=\n|$)",
+        ],
+        'party_b_name': [
+            r"(?im)(?:2[-\s]?tomon|ikkinchi\s+tomon|ijrochi|pudratchi|podryadchik|исполнитель)[\s:–-]+(.+?)(?=\n|$)",
+            r"(?im)taraflar\s*\(ikkinchi\s+tomoni\)[:\s]+(.+?)(?=\n|$)",
+        ],
+    }
     
     def __init__(self):
         """Initialize the parser."""
@@ -254,12 +264,24 @@ class ContractParser:
         # Detect language
         metadata.language = self._detect_language(text)
         
+        metadata.party_a_name = self._extract_party(text, 'party_a_name')
+        metadata.party_b_name = self._extract_party(text, 'party_b_name')
+
         return metadata
+
+    def _extract_party(self, text: str, field: str) -> Optional[str]:
+        """Extract party name using defined patterns."""
+        for pattern in self.PARTY_PATTERNS.get(field, []):
+            match = re.search(pattern, text)
+            if match:
+                return match.group(1).strip()
+        return None
     
     def _detect_language(self, text: str) -> str:
         """Detect contract language."""
         cyrillic = set('абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ')
         russian_specific = set('ъыэё')
+        uzbek_specific = set("ғҳъқўғвшч" )
         
         cyrillic_count = sum(1 for c in text if c in cyrillic)
         russian_count = sum(1 for c in text if c in russian_specific)
@@ -271,7 +293,11 @@ class ContractParser:
         cyrillic_ratio = cyrillic_count / total_letters
         
         if cyrillic_ratio > 0.5:
-            if russian_count > 10:
+            # prefer Uzbek Cyrillic if Uzbek-specific letters are present
+            uzbek_indicator = sum(1 for c in text if c in uzbek_specific)
+            if uzbek_indicator >= 2:
+                return 'uz-cyrl'
+            if russian_count > 10 and uzbek_indicator == 0:
                 return 'ru'
             return 'uz-cyrl'
         return 'uz-latn'
