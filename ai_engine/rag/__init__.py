@@ -12,6 +12,8 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 
+
+
 class LegalRAG:
     """
     RAG system for legal document retrieval and generation.
@@ -236,12 +238,17 @@ class LegalRAG:
             return "LLM client not available (neither Ollama nor OpenAI configured)"
         
         # Build context from documents
-        context = "\n\n".join([
-            f"Qonun: {doc.get('metadata', {}).get('law_name', "Noma'lum")}\n"
-            f"Modda: {doc.get('metadata', {}).get('article_number', '')}\n"
-            f"Matn: {doc['text']}"
-            for doc in context_docs
-        ])
+        context_lines = []
+        for doc in context_docs:
+            law_name = doc.get('metadata', {}).get('law_name') or "Noma'lum"
+            article_number = doc.get('metadata', {}).get('article_number', '')
+            text = doc['text']
+            context_lines.append(
+                f"Qonun: {law_name}\n"
+                f"Modda: {article_number}\n"
+                f"Matn: {text}"
+            )
+        context = "\n\n".join(context_lines)
         
         # Default system prompt
         if not system_prompt:
