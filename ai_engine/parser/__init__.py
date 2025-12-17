@@ -281,7 +281,7 @@ class ContractParser:
         """Detect contract language."""
         cyrillic = set('абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ')
         russian_specific = set('ъыэё')
-        uzbek_specific = set("ғҳъқўғвшч" )
+        uzbek_specific = set("ғҳқўшчђҷ")
         
         cyrillic_count = sum(1 for c in text if c in cyrillic)
         russian_count = sum(1 for c in text if c in russian_specific)
