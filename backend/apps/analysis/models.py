@@ -63,7 +63,7 @@ class AnalysisResult(models.Model):
     error_message = models.TextField('Xatolik xabari', blank=True)
     
     # AI model info
-    model_used = models.CharField('Ishlatilgan model', max_length=100, blank=True)
+    model_used = models.CharField('Ishlatilgan model', max_length=255, blank=True)
     model_version = models.CharField('Model versiyasi', max_length=50, blank=True)
     
     # Timestamps
@@ -139,13 +139,13 @@ class ComplianceIssue(models.Model):
     description = models.TextField('Tavsif')
     
     # Location in contract
-    section_reference = models.CharField('Bo\'lim', max_length=100, blank=True)
-    clause_reference = models.CharField('Band', max_length=100, blank=True)
+    section_reference = models.CharField('Bo\'lim', max_length=255, blank=True)
+    clause_reference = models.CharField('Band', max_length=255, blank=True)
     text_excerpt = models.TextField('Matn bo\'lagi', blank=True)
     
     # Legal reference
     law_name = models.CharField('Qonun nomi', max_length=500, blank=True)
-    law_article = models.CharField('Qonun moddasi', max_length=100, blank=True)
+    law_article = models.CharField('Qonun moddasi', max_length=255, blank=True)
     law_text = models.TextField('Qonun matni', blank=True)
     
     # Suggestion
