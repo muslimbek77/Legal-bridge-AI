@@ -510,6 +510,26 @@ class SpellingChecker:
             List of SpellingError objects
         """
         errors = []
+        seen_errors = set()
+
+        def emit_error(word: str, suggestion: str, error_type: SpellingErrorType, position: int,
+                       line_number: int, context: str, language: str, description: str) -> bool:
+            """Append the error unless we already reported this occurrence."""
+            key = (line_number, position, word.lower(), error_type, suggestion.lower())
+            if key in seen_errors:
+                return False
+            seen_errors.add(key)
+            errors.append(SpellingError(
+                word=word,
+                suggestion=suggestion,
+                error_type=error_type,
+                position=position,
+                line_number=line_number,
+                context=context,
+                language=language,
+                description=description
+            ))
+            return True
         
         # Split into lines for line number tracking
         lines = text.split('\n')
@@ -522,6 +542,8 @@ class SpellingChecker:
             for word, word_pos in words:
                 word_lower = word.lower()
                 error_found = False
+                position_index = position + word_pos
+                context = self._get_context(line, word_pos, word)
                 
                 # 1. Check for known misspellings first
                 if word_lower in self.all_corrections:
@@ -534,16 +556,16 @@ class SpellingChecker:
                     
                     error_type = self._determine_error_type(word_lower, correction)
                     
-                    errors.append(SpellingError(
+                    emit_error(
                         word=word,
                         suggestion=correction,
                         error_type=error_type,
-                        position=position + word_pos,
+                        position=position_index,
                         line_number=line_num,
-                        context=self._get_context(line, word_pos, word),
+                        context=context,
                         language=language,
                         description=self._get_error_description(error_type, word, correction)
-                    ))
+                    )
                     error_found = True
                 
                 # 2. Auto-detect x -> h errors using comprehensive H_WORDS list
@@ -556,31 +578,31 @@ class SpellingChecker:
                         elif word[0].isupper():
                             correction = 'H' + word[1:].lower()
                         
-                        errors.append(SpellingError(
+                        emit_error(
                             word=word,
                             suggestion=correction,
                             error_type=SpellingErrorType.WRONG_LETTER,
-                            position=position + word_pos,
+                            position=position_index,
                             line_number=line_num,
-                            context=self._get_context(line, word_pos, word),
+                            context=context,
                             language=language,
                             description=f"'x' o'rniga 'h' bo'lishi kerak: '{word}' → '{correction}'"
-                        ))
+                        )
                         error_found = True
                 
                 # 3. Check for backtick (`) instead of apostrophe (') in the middle of a word
                 if not error_found and self._has_internal_backtick(word):
                     suggestion = word.replace('`', "'")
-                    errors.append(SpellingError(
+                    emit_error(
                         word=word,
                         suggestion=suggestion,
                         error_type=SpellingErrorType.APOSTROPHE,
-                        position=position + word_pos,
+                        position=position_index,
                         line_number=line_num,
-                        context=self._get_context(line, word_pos, word),
+                        context=context,
                         language='uz-latn',
-                        description=f"Tutuq belgisi noto'g'ri: '`' o'rniga \"'\" ishlatilishi kerak"
-                    ))
+                        description=f"Tutuq belgisi noto'g'ri: '`' o'rniga "'" ishlatilishi kerak"
+                    )
                     error_found = True
                 
                 # 4. Check for missing apostrophe in common words
@@ -637,16 +659,16 @@ class SpellingChecker:
                         elif word[0].isupper():
                             suggestion = suggestion.capitalize()
                         
-                        errors.append(SpellingError(
+                        emit_error(
                             word=word,
                             suggestion=suggestion,
                             error_type=SpellingErrorType.APOSTROPHE,
-                            position=position + word_pos,
+                            position=position_index,
                             line_number=line_num,
-                            context=self._get_context(line, word_pos, word),
+                            context=context,
                             language='uz-latn',
                             description=f"Tutuq belgisi tushib qolgan: '{word}' → '{suggestion}'"
-                        ))
+                        )
                         error_found = True
                 
                 # 5. Check for mixed Latin/Cyrillic
