@@ -202,17 +202,23 @@ class OCRProcessor:
         return text.strip(), confidence
     
     def _preprocess_image(self, img: Image.Image) -> Image.Image:
-        """Preprocess image for better OCR results."""
-        # Convert to RGB if necessary
-        if img.mode != 'RGB':
-            img = img.convert('RGB')
-        
-        # Increase size if too small
+        """Kuchli preprocessing: grayscale, kontrast, threshold, noise removal, enlarge."""
+        from PIL import ImageEnhance, ImageFilter
+        # 1. Grayscale
+        img = img.convert('L')
+        # 2. Kontrast oshirish
+        img = ImageEnhance.Contrast(img).enhance(2.0)
+        # 3. Threshold (binarization)
+        img = img.point(lambda x: 0 if x < 160 else 255, '1')
+        # 4. Noise removal (median filter)
+        img = img.filter(ImageFilter.MedianFilter(size=3))
+        # 5. Enlarge if too small
         width, height = img.size
-        if width < 1000:
-            ratio = 1000 / width
+        if width < 1200:
+            ratio = 1200 / width
             img = img.resize((int(width * ratio), int(height * ratio)), Image.LANCZOS)
-        
+        # 6. Convert back to RGB for tesseract compatibility
+        img = img.convert('RGB')
         return img
     
     def _process_word(self, file_path: Path) -> Tuple[str, float, bool]:
