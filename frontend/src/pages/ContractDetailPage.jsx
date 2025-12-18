@@ -68,7 +68,7 @@ export default function ContractDetailPage() {
     onSuccess: () => {
       queryClient.invalidateQueries(["contract", id]);
       queryClient.invalidateQueries(["contract-analysis", id]);
-      toast.success("Tahlil boshlandi");
+      toast.success("Tahlil boshlandi", { duration: 2200 });
     },
     onError: () => {
       toast.error("Tahlil boshlashda xatolik");
@@ -586,7 +586,9 @@ export default function ContractDetailPage() {
                 Tahlil qilinmoqda...
               </h3>
               <p className="mt-2 text-sm text-gray-500">
-                Shartnoma sun'iy intellekt yordamida tahlil qilinmoqda. Yuklangan fayl hajmiga qarab tahlil jarayoni 1 soniyadan 5 daqiqagacha vaqt olishi mumkin.
+                Shartnoma sun'iy intellekt yordamida tahlil qilinmoqda.
+                Yuklangan fayl hajmiga qarab tahlil jarayoni 1 soniyadan 5
+                daqiqagacha vaqt olishi mumkin.
               </p>
             </div>
           )}

@@ -1,4 +1,4 @@
-import { Outlet, NavLink, useNavigate } from "react-router-dom";
+import { Outlet, NavLink, useNavigate, Link } from "react-router-dom";
 import { Fragment, useState } from "react";
 import { Dialog, Transition, Menu } from "@headlessui/react";
 import {
@@ -17,6 +17,7 @@ import { useAuthStore } from "../store/authStore";
 import clsx from "clsx";
 import { Avatar, Space } from "antd";
 import { UserOutlined } from "@ant-design/icons";
+import { GoLaw } from "react-icons/go";
 import legal_logo from "../assets/legal_logo.png";
 
 const navigation = [
@@ -150,13 +151,14 @@ export default function Layout() {
 
       {/* Static sidebar for desktop */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
-        <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6 pb-4">
+        <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200  px-6 pb-4">
           <div className="flex h-16 shrink-0 items-center">
-            <ScaleIcon className="h-8 w-8 text-primary-600" />
-            <span className="ml-2 text-xl font-bold text-gray-900">
-              Legal Bridge
-            </span>
-            {/* <img className="block w-full h-[150px]" src={legal_logo} alt="logo" /> */}
+            <Link to="/dashboard" className="flex items-center">
+              <GoLaw style={{ fontSize: 28 }} />
+              <span className="ml-2 text-xl font-bold text-gray-900">
+                Legal Bridge
+              </span>
+            </Link>
           </div>
           <nav className="flex flex-1 flex-col">
             <ul role="list" className="flex flex-1 flex-col gap-y-7">

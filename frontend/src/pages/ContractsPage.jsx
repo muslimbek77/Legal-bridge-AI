@@ -67,6 +67,8 @@ export default function ContractsPage() {
   const contractsList = data?.results || [];
   const hasContracts = contractsList.length > 0;
 
+  // console.log(contractsList);
+
   const contractTypes = [
     { value: "", label: "Barcha turlar" },
     { value: "service", label: "Xizmat ko'rsatish" },
@@ -79,8 +81,9 @@ export default function ContractsPage() {
 
   const statusOptions = [
     { value: "", label: "Barcha statuslar" },
-    { value: "draft", label: "Qoralama" },
-    { value: "pending", label: "Kutilmoqda" },
+    // { value: "draft", label: "Qoralama" },
+    { value: "uploaded", label: "Qoralama" },
+    // { value: "pending", label: "Kutilmoqda" },
     { value: "processing", label: "Tahlil qilinmoqda" },
     { value: "analyzed", label: "Tahlil qilindi" },
     { value: "approved", label: "Tasdiqlandi" },

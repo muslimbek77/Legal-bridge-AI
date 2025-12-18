@@ -269,7 +269,7 @@ export default function ContractUploadPage() {
             </div>
 
             {/* Auto Analyze */}
-            <div className="sm:col-span-2">
+            {/* <div className="sm:col-span-2">
               <div className="flex items-center">
                 <input
                   type="checkbox"
@@ -289,7 +289,7 @@ export default function ContractUploadPage() {
               <p className="mt-1 text-xs text-gray-500">
                 Shartnoma yuklanganidan so'ng darhol tahlil boshlash
               </p>
-            </div>
+            </div> */}
           </div>
         </div>
 

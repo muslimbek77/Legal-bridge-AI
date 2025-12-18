@@ -23,6 +23,7 @@ import {
 import LoadingSpinner from "../components/LoadingSpinner";
 import { RiskScoreCircle } from "../components/RiskScoreBadge";
 import contractsService from "../services/contracts";
+import ContractStatusBadge from "../components/ContractStatusBadge";
 
 const RISK_COLORS = ["#10B981", "#F59E0B", "#F97316", "#EF4444"];
 
@@ -119,7 +120,7 @@ export default function DashboardPage() {
       color: "bg-red-500",
     },
   ];
-  // console.log(displayStats);
+  // console.log("displayStats", displayStats);
 
   return (
     <div className="space-y-6">
@@ -244,18 +245,18 @@ export default function DashboardPage() {
             Shartnoma Turlari
           </h3>
           {displayStats.contracts_by_type.length > 0 ? (
-            <ResponsiveContainer width="100%" height={320}>
+            <ResponsiveContainer width="100%" height={260}>
               <PieChart>
                 <Pie
                   className=""
                   data={displayStats.contracts_by_type}
                   cx="50%"
                   cy="50%"
-                  outerRadius={100}
+                  outerRadius={130}
                   dataKey="value"
-                  label={({ name, percent }) =>
-                    `${name} (${(percent * 100).toFixed(0)}%)`
-                  }
+                  // label={({ name, percent }) =>
+                  //   `${name} (${(percent * 100).toFixed(0)}%)`
+                  // }
                 >
                   {displayStats.contracts_by_type.map((entry, index) => (
                     <Cell
@@ -273,6 +274,22 @@ export default function DashboardPage() {
               <p className="text-sm">Hali shartnomalar yo'q</p>
             </div>
           )}
+          <div className="my-5">
+            {displayStats.contracts_by_type.map((item, index) => (
+              <div key={item.name} className="flex items-center text-sm mb-2">
+                <div
+                  className="w-4 h-4 rounded-full mr-2"
+                  style={{
+                    backgroundColor: RISK_COLORS[index % RISK_COLORS.length],
+                  }}
+                />
+                <span className="mr-2">{item.name}</span>
+                <span className="font-semibold text-gray-900">
+                  {item.value && `${item.value} ta`}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Recent Contracts */}
@@ -298,12 +315,12 @@ export default function DashboardPage() {
                   >
                     <div className="flex items-center">
                       <DocumentTextIcon className="h-10 w-10 text-gray-400" />
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-900">
+                      <div className="ml-4 flex flex-col space-y-1">
+                        <p className="text-sm font-medium pl-2 text-gray-900">
                           {contract.title}
                         </p>
                         <p className="text-sm text-gray-500 capitalize">
-                          {contract.status}
+                          {ContractStatusBadge({ status: contract.status })}
                         </p>
                       </div>
                     </div>
