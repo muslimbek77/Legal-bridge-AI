@@ -13,6 +13,7 @@ import Modal from "../components/Modal";
 import reportsService from "../services/reports";
 
 import { useEffect } from "react";
+import { DeleteOutlined, DownloadOutlined } from "@ant-design/icons";
 
 function useDebounce(value, delay = 500) {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -247,27 +248,27 @@ export default function ReportsPage() {
                       {format(new Date(report.created_at), "dd.MM.yyyy HH:mm")}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-3">
                         <button
                           onClick={() => handleDownload(report)}
                           className="text-primary-600 hover:text-primary-900"
                           title="Yuklab olish"
                         >
-                          <DocumentArrowDownIcon className="h-5 w-5" />
+                          <DownloadOutlined style={{ fontSize: 20 }} />
                         </button>
-                        <button
+                        {/* <button
                           onClick={() => handleEmail(report)}
                           className="text-green-600 hover:text-green-900"
                           title="Email orqali yuborish"
                         >
                           <EnvelopeIcon className="h-5 w-5" />
-                        </button>
+                        </button> */}
                         <button
                           onClick={() => handleDelete(report)}
                           className="text-red-600 hover:text-red-900"
                           title="O'chirish"
                         >
-                          <TrashIcon className="h-5 w-5" />
+                          <DeleteOutlined style={{ fontSize: 20 }} />
                         </button>
                       </div>
                     </td>

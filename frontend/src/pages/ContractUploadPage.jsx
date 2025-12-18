@@ -70,6 +70,7 @@ export default function ContractUploadPage() {
     data.append("original_file", files[0]);
     data.append("title", formData.title);
     data.append("contract_type", formData.contract_type);
+    data.append("language", formData.language);
     if (formData.description) {
       data.append("notes", formData.description);
     }
@@ -84,6 +85,7 @@ export default function ContractUploadPage() {
       [name]: type === "checkbox" ? checked : value,
     }));
   };
+  // console.log(formData);
 
   return (
     <div className="max-w-3xl mx-auto">

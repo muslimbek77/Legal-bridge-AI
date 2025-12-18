@@ -43,9 +43,9 @@ export default function ContractsPage() {
     mutationFn: (ids) =>
       Promise.all(ids.map((id) => contractsService.deleteContract(id))),
     onSuccess: () => {
-      queryClient.invalidateQueries(["contracts"]);
-      toast.success("Shartnoma o'chirildi");
       setDeleteModalOpen(false);
+      toast.success("Shartnoma o'chirildi");
+      queryClient.invalidateQueries(["contracts"]);
     },
     onError: () => {
       toast.error("Xatolik yuz berdi");
@@ -105,7 +105,7 @@ export default function ContractsPage() {
   const getRiskScoreClass = (score) => {
     if (score === null) return "";
     if (score < 25) return "bg-green-100 text-green-800";
-    if (score < 50) return "bg-yellow-100 text-yellow-800";
+    if (score < 50) return "bg-yellow-100 text-`yellow-800";
     if (score < 75) return "bg-orange-100 text-orange-800";
     return "bg-red-100 text-red-800";
   };
@@ -373,13 +373,8 @@ export default function ContractsPage() {
           >
             Bekor qilish
           </button>
-          <button
-            type="button"
-            className="btn-danger"
-            onClick={confirmDelete}
-            disabled={deleteMutation.isPending}
-          >
-            {deleteMutation.isPending ? "O'chirilmoqda..." : "O'chirish"}
+          <button type="button" className="btn-danger" onClick={confirmDelete}>
+            O'chirish
           </button>
         </div>
       </Modal>

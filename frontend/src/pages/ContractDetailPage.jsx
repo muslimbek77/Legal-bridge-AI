@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -15,7 +15,7 @@ import {
   ArrowTopRightOnSquareIcon,
   ClipboardDocumentIcon,
 } from "@heroicons/react/24/outline";
-import { format } from "date-fns";
+import { format, set } from "date-fns";
 import toast from "react-hot-toast";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ContractStatusBadge from "../components/ContractStatusBadge";
@@ -152,7 +152,12 @@ export default function ContractDetailPage() {
     grammar: "Grammatik xato",
   };
 
-  const uiStatus = displayAnalysis ? "analyzed" : displayContract.status;
+  const uiStatus = displayAnalysis?.status;
+
+  // console.log(displayAnalysis?.status);
+  // console.log("uiStatus", uiStatus);
+  // console.log("displayAnalysis", displayAnalysis);
+  // console.log(displayContract);
 
   return (
     <div className="space-y-6">
@@ -198,11 +203,15 @@ export default function ContractDetailPage() {
             </a>
           )}
 
-          {uiStatus !== "analyzed" && (
+          {uiStatus !== "completed" && (
             <button
               onClick={() => analyzeMutation.mutate()}
-              disabled={analyzeMutation.isPending}
-              className="btn-primary"
+              disabled={uiStatus === "in_progress" || analyzeMutation.isPending}
+              className={`btn-primary ${
+                uiStatus === "in_progress"
+                  ? "opacity-60 cursor-not-allowed"
+                  : ""
+              }`}
             >
               <ArrowPathIcon
                 className={`h-5 w-5 mr-2 ${
@@ -214,14 +223,16 @@ export default function ContractDetailPage() {
           )}
 
           <div className="relative">
-            <button
-              onClick={() => setReportMenuOpen(!reportMenuOpen)}
-              className="btn-secondary flex items-center"
-            >
-              <DocumentArrowDownIcon className="h-5 w-5 mr-2" />
-              Hisobot
-              <ChevronDownIcon className="h-4 w-4 ml-2" />
-            </button>
+            {uiStatus === "completed" && (
+              <button
+                onClick={() => setReportMenuOpen(!reportMenuOpen)}
+                className="btn-secondary flex items-center"
+              >
+                <DocumentArrowDownIcon className="h-5 w-5 mr-2" />
+                Hisobot
+                <ChevronDownIcon className="h-4 w-4 ml-2" />
+              </button>
+            )}
             {reportMenuOpen && (
               <>
                 <div
@@ -346,20 +357,24 @@ export default function ContractDetailPage() {
                 </dd>
               </div>
               <div className="col-span-2">
-                <dt className="text-sm font-medium text-gray-500">
-                  Shartnoma tili
-                </dt>
-                <dd className="mt-1 text-sm text-gray-900 whitespace-pre-wrap">
-                  {displayContract.language_display == "Русский"
-                    ? "Rus tili"
-                    : displayContract.language_display}
-                </dd>
+                {uiStatus === "completed" && displayAnalysis && (
+                  <>
+                    <dt className="text-sm font-medium text-gray-500">
+                      Shartnoma tili
+                    </dt>
+                    <dd className="mt-1 text-sm text-gray-900 whitespace-pre-wrap">
+                      {displayContract.language_display == "Русский"
+                        ? "Rus tili"
+                        : displayContract.language_display}
+                    </dd>
+                  </>
+                )}
               </div>
             </dl>
           </div>
 
           {/* Analysis Summary */}
-          {uiStatus === "analyzed" && displayAnalysis && (
+          {uiStatus === "completed" && displayAnalysis && (
             <>
               <div className="card p-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">
@@ -394,6 +409,16 @@ export default function ContractDetailPage() {
                           className="text-sm font-semibold text-gray-900"
                         >
                           Til: O'zbek tili (Lotin)
+                        </p>
+                      );
+                    }
+                    if (line.startsWith("Til: uz-cyrl")) {
+                      return (
+                        <p
+                          key={index}
+                          className="text-sm font-semibold text-gray-900"
+                        >
+                          Til: O'zbek tili (Kiril)
                         </p>
                       );
                     }
@@ -440,118 +465,128 @@ export default function ContractDetailPage() {
                 </div>
                 <div className="mt-4 flex items-center text-xs text-gray-500">
                   <ClockIcon className="h-4 w-4 mr-1" />
-                  Tahlil vaqti: {displayAnalysis.processing_time?.toFixed(
-                    1
-                  )}{" "}
-                  soniya
+                  <span>
+                    Tahlil vaqti:{" "}
+                    {(() => {
+                      const t = displayAnalysis.processing_time;
+                      if (!t && t !== 0) return "-";
+
+                      if (t < 60) {
+                        return `${t.toFixed(1)} soniya`;
+                      }
+
+                      if (t < 3600) {
+                        return `${(t / 60).toFixed(1)} daqiqa`;
+                      }
+
+                      return `${(t / 3600).toFixed(1)} soat`;
+                    })()}
+                  </span>
                 </div>
               </div>
 
               {/* Matn.uz Imlo Tekshiruvi */}
-              <div className="card">
-                <div className="card-header flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <LanguageIcon className="h-5 w-5 text-purple-600" />
-                    <h3 className="text-lg font-medium text-gray-900">
-                      Imlo tekshiruvi (Matn.uz)
-                    </h3>
+              {displayContract.extracted_text && (
+                <div className="card">
+                  <div className="card-header flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <LanguageIcon className="h-5 w-5 text-purple-600" />
+                      <h3 className="text-lg font-medium text-gray-900">
+                        Imlo tekshiruvi (Matn.uz)
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          if (displayContract.extracted_text) {
+                            navigator.clipboard.writeText(
+                              displayContract.extracted_text
+                            );
+                            setTextCopied(true);
+                            toast.success("Matn nusxalandi!");
+                            setTimeout(() => setTextCopied(false), 2000);
+                          }
+                        }}
+                        className="btn-secondary text-sm flex items-center gap-1"
+                        disabled={!displayContract.extracted_text}
+                      >
+                        <ClipboardDocumentIcon className="h-4 w-4" />
+                        {textCopied ? "Nusxalandi!" : "Matnni nusxalash"}
+                      </button>
+                      <a
+                        href="https://matn.uz"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn-secondary text-sm flex items-center gap-1"
+                      >
+                        <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+                        Matn.uz ga o'tish
+                      </a>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => {
-                        if (displayContract.extracted_text) {
-                          navigator.clipboard.writeText(
-                            displayContract.extracted_text
-                          );
-                          setTextCopied(true);
-                          toast.success("Matn nusxalandi!");
-                          setTimeout(() => setTextCopied(false), 2000);
-                        }
-                      }}
-                      className="btn-secondary text-sm flex items-center gap-1"
-                      disabled={!displayContract.extracted_text}
-                    >
-                      <ClipboardDocumentIcon className="h-4 w-4" />
-                      {textCopied ? "Nusxalandi!" : "Matnni nusxalash"}
-                    </button>
-                    <a
-                      href="https://matn.uz"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn-secondary text-sm flex items-center gap-1"
-                    >
-                      <ArrowTopRightOnSquareIcon className="h-4 w-4" />
-                      Matn.uz ga o'tish
-                    </a>
+                  <div className="p-4">
+                    {showMatnUz && (
+                      <div className="border rounded-lg overflow-hidden">
+                        <div className="bg-purple-50 p-3 border-b flex items-center justify-between">
+                          <span className="text-sm text-purple-700 font-medium">
+                            📝 Matn.uz - O'zbek tili imlo tekshiruvchisi
+                          </span>
+                          <span className="text-xs text-purple-500">
+                            Matnni quyidagi maydonga joylang va "Tekshirish"
+                            tugmasini bosing
+                          </span>
+                        </div>
+                        <iframe
+                          src="https://matn.uz"
+                          className="w-full border-0"
+                          style={{ height: "600px" }}
+                          title="Matn.uz Imlo Tekshiruvi"
+                          sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+                        />
+                      </div>
+                    )}
+
+                    {!showMatnUz && displayContract.extracted_text && (
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">
+                          Shartnoma matni:
+                        </h4>
+                        <div className="max-h-48 overflow-y-auto">
+                          <pre className="text-xs text-gray-600 whitespace-pre-wrap font-sans">
+                            {displayContract.extracted_text.substring(0, 1000)}
+                            {displayContract.extracted_text.length > 1000 &&
+                              "..."}
+                          </pre>
+                        </div>
+                        <p className="mt-3 text-xs text-green-500">
+                          💡 "Matnni nusxalash" tugmasini bosing va Matn.uz
+                          saytiga o'tib tekshiring
+                        </p>
+                      </div>
+                    )}
+                    {/* {showMatnUz
+                    ? null &&
+                      !displayContract.extracted_text && (
+                        <p className="text-sm text-gray-500">
+                          Shartnoma matni mavjud emas.
+                        </p>
+                      )
+                    : null} */}
                   </div>
                 </div>
-                <div className="p-4">
-                  {/* <div className="mb-4">
-                    <button
-                      onClick={() => setShowMatnUz(!showMatnUz)}
-                      className="btn-primary flex items-center gap-2"
-                    >
-                      <LanguageIcon className="h-5 w-5" />
-                      {showMatnUz
-                        ? "Matn.uz ni yopish"
-                        : "Matn.uz da tekshirish"}
-                    </button>
-                  </div> */}
-
-                  {showMatnUz && (
-                    <div className="border rounded-lg overflow-hidden">
-                      <div className="bg-purple-50 p-3 border-b flex items-center justify-between">
-                        <span className="text-sm text-purple-700 font-medium">
-                          📝 Matn.uz - O'zbek tili imlo tekshiruvchisi
-                        </span>
-                        <span className="text-xs text-purple-500">
-                          Matnni quyidagi maydonga joylang va "Tekshirish"
-                          tugmasini bosing
-                        </span>
-                      </div>
-                      <iframe
-                        src="https://matn.uz"
-                        className="w-full border-0"
-                        style={{ height: "600px" }}
-                        title="Matn.uz Imlo Tekshiruvi"
-                        sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
-                      />
-                    </div>
-                  )}
-
-                  {!showMatnUz && displayContract.extracted_text && (
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">
-                        Shartnoma matni:
-                      </h4>
-                      <div className="max-h-48 overflow-y-auto">
-                        <pre className="text-xs text-gray-600 whitespace-pre-wrap font-sans">
-                          {displayContract.extracted_text.substring(0, 1000)}
-                          {displayContract.extracted_text.length > 1000 &&
-                            "..."}
-                        </pre>
-                      </div>
-                      <p className="mt-3 text-xs text-green-500">
-                        💡 "Matnni nusxalash" tugmasini bosing va Matn.uz
-                        saytiga o'tib tekshiring
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
+              )}
             </>
           )}
 
           {/* Processing status */}
-          {uiStatus === "processing" && !displayAnalysis && (
+          {uiStatus == "in_progress" && (
             <div className="card p-8 text-center">
               <LoadingSpinner size="lg" className="mb-4" />
               <h3 className="text-lg font-medium text-gray-900">
                 Tahlil qilinmoqda...
               </h3>
               <p className="mt-2 text-sm text-gray-500">
-                Shartnoma sun'iy intellekt yordamida tahlil qilinmoqda. Bu 1-2
-                daqiqa davom etishi mumkin.
+                Shartnoma sun'iy intellekt yordamida tahlil qilinmoqda. Yuklangan fayl hajmiga qarab tahlil jarayoni 1 soniyadan 5 daqiqagacha vaqt olishi mumkin.
               </p>
             </div>
           )}
