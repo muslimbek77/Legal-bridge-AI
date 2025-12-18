@@ -135,7 +135,7 @@ class ComplianceIssue(models.Model):
         choices=Severity.choices,
         default=Severity.MEDIUM
     )
-    title = models.CharField('Sarlavha', max_length=500)
+    title = models.CharField('Sarlavha', max_length=1000)
     description = models.TextField('Tavsif')
     
     # Location in contract
@@ -144,7 +144,7 @@ class ComplianceIssue(models.Model):
     text_excerpt = models.TextField('Matn bo\'lagi', blank=True)
     
     # Legal reference
-    law_name = models.CharField('Qonun nomi', max_length=500, blank=True)
+    law_name = models.CharField('Qonun nomi', max_length=1000, blank=True)
     law_article = models.CharField('Qonun moddasi', max_length=255, blank=True)
     law_text = models.TextField('Qonun matni', blank=True)
     

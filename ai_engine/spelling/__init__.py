@@ -497,6 +497,12 @@ class SpellingChecker:
             **self.UZBEK_CORRECTIONS,
             **self.RUSSIAN_CORRECTIONS
         }
+        # Optional external backends (Hunspell/LanguageTool) — safe if missing
+        try:
+            from .backends import CombinedBackend  # type: ignore
+            self._external = CombinedBackend()
+        except Exception:
+            self._external = None
     
     def check_text(self, text: str, language: str = 'uz-latn') -> List[SpellingError]:
         """
@@ -677,6 +683,23 @@ class SpellingChecker:
                     mixed_error = self._check_mixed_script(word, line_num, position + word_pos, line, word_pos)
                     if mixed_error:
                         errors.append(mixed_error)
+                        error_found = True
+
+                # 6. External backends (Hunspell/LanguageTool) for generic typos
+                if not error_found and self._should_external_check(word):
+                    suggestion = self._external_suggest(word, language)
+                    if suggestion is not None and suggestion.lower() != word_lower:
+                        emit_error(
+                            word=word,
+                            suggestion=self._preserve_case(word, suggestion),
+                            error_type=SpellingErrorType.TYPO,
+                            position=position_index,
+                            line_number=line_num,
+                            context=context,
+                            language=language,
+                            description=f"Imloviy xato: '{word}' → '{suggestion}'"
+                        )
+                        error_found = True
             
             position += len(line) + 1  # +1 for newline
         
@@ -701,6 +724,41 @@ class SpellingChecker:
             return SpellingErrorType.MISSING_LETTER
         else:
             return SpellingErrorType.WRONG_LETTER
+
+    def _should_external_check(self, word: str) -> bool:
+        """Heuristics to decide when to call external spell-checkers."""
+        if self._external is None:
+            return False
+        if len(word) < 3:
+            return False
+        if any(ch.isdigit() for ch in word):
+            return False
+        # Avoid screaming-case acronyms and fully uppercase org names
+        if word.isupper() and len(word) <= 5:
+            return False
+        return True
+
+    def _external_suggest(self, word: str, language: str) -> Optional[str]:
+        """Ask external backends for a suggestion; return None if correct/unknown."""
+        try:
+            if self._external is None:
+                return None
+            res = self._external.check(word, language)
+            if res.correct:
+                return None
+            return res.suggestion
+        except Exception:
+            return None
+
+    def _preserve_case(self, original: str, suggestion: str) -> str:
+        """Match the case style of the original token in the suggestion."""
+        if not suggestion:
+            return suggestion
+        if original.isupper():
+            return suggestion.upper()
+        if original[0].isupper():
+            return suggestion.capitalize()
+        return suggestion
     
     def _check_mixed_script(self, word: str, line_num: int, position: int, 
                            line: str, word_pos: int) -> Optional[SpellingError]:

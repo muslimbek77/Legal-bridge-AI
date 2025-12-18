@@ -19,7 +19,16 @@ cd /home/rasulbek/muslim-projects/Legal-bridge-AI/backend
 source venv/bin/activate
 
 # Celery worker'ni background'da ishga tushirish
-celery -A config worker -l INFO --logfile=/tmp/celery_worker.log 2>&1 &
+# Stability: limit broker pool, lower concurrency, and use solo pool to avoid fd issues
+export CELERY_BROKER_POOL_LIMIT=0
+
+# Start Celery worker with safer options for dev
+celery -A config worker -l INFO \
+	--pool=solo \
+	--concurrency=2 \
+	--without-mingle \
+	--without-gossip \
+	--logfile=/tmp/celery_worker.log 2>&1 &
 
 # Worker PIDni saqlash
 WORKER_PID=$!

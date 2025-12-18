@@ -62,7 +62,7 @@ class Contract(models.Model):
     ocr_confidence = models.FloatField('OCR ishonchliligi', null=True, blank=True)
     
     # Contract metadata
-    title = models.CharField('Shartnoma nomi', max_length=500, blank=True)
+    title = models.CharField('Shartnoma nomi', max_length=1000, blank=True)
     contract_type = models.CharField(
         'Shartnoma turi',
         max_length=20,
@@ -77,9 +77,9 @@ class Contract(models.Model):
     )
     
     # Parties
-    party_a = models.CharField('1-tomon', max_length=500, blank=True)
+    party_a = models.TextField('1-tomon', blank=True)
     party_a_inn = models.CharField('1-tomon INN', max_length=20, blank=True)
-    party_b = models.CharField('2-tomon', max_length=500, blank=True)
+    party_b = models.TextField('2-tomon', blank=True)
     party_b_inn = models.CharField('2-tomon INN', max_length=20, blank=True)
     
     # Dates
@@ -183,7 +183,7 @@ class ContractSection(models.Model):
         choices=SectionType.choices
     )
     section_number = models.CharField('Bo\'lim raqami', max_length=20, blank=True)
-    title = models.CharField('Sarlavha', max_length=500, blank=True)
+    title = models.CharField('Sarlavha', max_length=1000, blank=True)
     content = models.TextField('Mazmun')
     start_position = models.PositiveIntegerField('Boshlanish pozitsiyasi', default=0)
     end_position = models.PositiveIntegerField('Tugash pozitsiyasi', default=0)

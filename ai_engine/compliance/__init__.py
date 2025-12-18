@@ -402,6 +402,14 @@ class LegalComplianceEngine:
         required = self.REQUIRED_SECTIONS.get(contract_type, self.REQUIRED_SECTIONS.get("service", []))
         found_types = {s.section_type for s in sections}
         
+        # Check if requisites-like content exists anywhere in text (bank details, INN, etc)
+        all_text = ' '.join(s.content.lower() for s in sections)
+        has_requisites_content = any(kw in all_text for kw in ['stir', 'inn', 'банк', 'bank', 'р/с', 'мфо', 'mfo', 'расчетный счет', 'hisob raqam'])
+        if has_requisites_content and SectionType.REQUISITES not in found_types:
+            found_types.add(SectionType.REQUISITES)
+        
+        logger.info(f"[COMPLIANCE] required={required}, found={found_types}")
+        
         for section_type in required:
             if section_type not in found_types:
                 section_name_uz = get_section_name_uz(section_type.value)
@@ -430,6 +438,17 @@ class LegalComplianceEngine:
         if rule.section_type:
             section = self._get_section_by_type(sections, rule.section_type)
             section_name_uz = get_section_name_uz(rule.section_type.value)
+            
+            # For PRICE section, also check if metadata has amount (content may be in different section)
+            if not section and rule.section_type == SectionType.PRICE and metadata.total_amount:
+                return issues  # Price found in metadata, skip issue
+            
+            # For TERM section, check if term info exists anywhere in text
+            if not section and rule.section_type == SectionType.TERM:
+                all_text = ' '.join(s.content.lower() for s in sections)
+                if any(kw in all_text for kw in ['amal qiladi', 'muddati', 'действует', 'срок']):
+                    return issues  # Term info found in contract text
+            
             if not section and rule.check_type == "mandatory":
                 issues.append(ComplianceIssue(
                     issue_type=IssueType.MISSING_CLAUSE,
@@ -448,6 +467,15 @@ class LegalComplianceEngine:
                 found_keywords = [kw for kw in rule.keywords if kw.lower() in content_lower]
                 
                 if rule.check_type == "mandatory" and not found_keywords:
+                    # If the section exists but keywords aren't found, treat core structural sections as present
+                    if rule.section_type in {
+                        SectionType.SUBJECT,
+                        SectionType.PARTIES,
+                        SectionType.TERM,
+                        SectionType.REQUISITES,
+                        SectionType.PRICE,
+                    }:
+                        return issues
                     issues.append(ComplianceIssue(
                         issue_type=IssueType.MISSING_INFO,
                         severity=rule.severity,
@@ -521,7 +549,7 @@ class LegalComplianceEngine:
         if not metadata.contract_date:
             issues.append(ComplianceIssue(
                 issue_type=IssueType.MISSING_INFO,
-                severity=IssueSeverity.HIGH,
+                severity=IssueSeverity.MEDIUM,  # Reduced from HIGH
                 title="Shartnoma sanasi ko'rsatilmagan",
                 description="Shartnoma tuzilgan sana aniqlanmadi",
                 suggestion="Shartnoma sanasini aniq ko'rsating",
@@ -532,7 +560,7 @@ class LegalComplianceEngine:
         if not metadata.party_a_inn:
             issues.append(ComplianceIssue(
                 issue_type=IssueType.MISSING_INFO,
-                severity=IssueSeverity.HIGH,
+                severity=IssueSeverity.MEDIUM,  # Reduced from HIGH
                 title="1-tomon INN/STIR ko'rsatilmagan",
                 description="Birinchi tomonning identifikatsiya raqami topilmadi",
                 suggestion="Tomonning INN/STIR raqamini qo'shing",
@@ -541,7 +569,7 @@ class LegalComplianceEngine:
         if not metadata.party_b_inn:
             issues.append(ComplianceIssue(
                 issue_type=IssueType.MISSING_INFO,
-                severity=IssueSeverity.HIGH,
+                severity=IssueSeverity.MEDIUM,  # Reduced from HIGH
                 title="2-tomon INN/STIR ko'rsatilmagan",
                 description="Ikkinchi tomonning identifikatsiya raqami topilmadi",
                 suggestion="Tomonning INN/STIR raqamini qo'shing",
@@ -551,7 +579,7 @@ class LegalComplianceEngine:
             if not metadata.total_amount:
                 issues.append(ComplianceIssue(
                     issue_type=IssueType.MISSING_INFO,
-                    severity=IssueSeverity.HIGH,
+                    severity=IssueSeverity.MEDIUM,  # Reduced from HIGH
                     title="Shartnoma summasi ko'rsatilmagan",
                     description="Shartnomaning umumiy summasi aniqlanmadi",
                     suggestion="Shartnoma summasini aniq ko'rsating",
