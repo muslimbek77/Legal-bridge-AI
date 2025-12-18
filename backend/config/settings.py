@@ -213,6 +213,15 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+"""
+Stability tweaks for local development:
+- broker_pool_limit=0: Avoids Redis/Kombu fd mapping issues (KeyError in _fd_to_chan)
+- worker_prefetch_multiplier=1: Reduce task prefetching to avoid starvation
+- broker_connection_retry_on_startup=True: Make worker resilient on startup
+"""
+CELERY_BROKER_POOL_LIMIT = 0
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
 # DRF Spectacular (API Documentation)
 SPECTACULAR_SETTINGS = {

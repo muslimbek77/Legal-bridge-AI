@@ -55,9 +55,9 @@ class OCRProcessor:
         except Exception:
             self.max_pages = 0
         try:
-            self.ocr_dpi = int(os.environ.get('OCR_DPI', '300'))
+            self.ocr_dpi = int(os.environ.get('OCR_DPI', '400'))
         except Exception:
-            self.ocr_dpi = 300
+            self.ocr_dpi = 400
         # Optional PaddleOCR fallback
         self.use_paddle = os.environ.get('USE_PADDLE', '0') in ('1', 'true', 'True')
         self._paddle = None
@@ -78,13 +78,13 @@ class OCRProcessor:
         # OCR behavior toggles
         self.force_ocr = os.environ.get('OCR_FORCE', '0') in ('1', 'true', 'True')
         try:
-            self.min_quality = float(os.environ.get('OCR_QUALITY_MIN', '250'))
+            self.min_quality = float(os.environ.get('OCR_QUALITY_MIN', '150'))
         except Exception:
-            self.min_quality = 250.0
+            self.min_quality = 150.0
         try:
-            self.max_gibberish = float(os.environ.get('OCR_GIBBERISH_MAX', '0.45'))
+            self.max_gibberish = float(os.environ.get('OCR_GIBBERISH_MAX', '0.55'))
         except Exception:
-            self.max_gibberish = 0.45
+            self.max_gibberish = 0.55
         
         # Verify Tesseract is installed
         try:
@@ -365,8 +365,8 @@ class OCRProcessor:
     def _ocr_image_best(self, img: Image.Image) -> Tuple[str, float]:
         """Try multiple Tesseract configs (PSM) and pick best by confidence/length."""
         candidates = []
-        # Try a few common PSM values
-        for psm in (6, 4, 11):
+        # Try a few common PSM values: 1=Auto OSD, 3=Auto, 6=Block, 4=Column
+        for psm in (1, 3, 6, 4):
             config = f"--psm {psm}"
             try:
                 data = pytesseract.image_to_data(
@@ -406,21 +406,23 @@ class OCRProcessor:
         return self._ocr_image_best(img)
 
     def _preprocess_image(self, img: Image.Image) -> Image.Image:
-        """Lightweight preprocessing to improve OCR accuracy."""
+        """Improved preprocessing for scanned documents."""
         # 1. Grayscale
         img = img.convert('L')
-        # 2. Increase contrast
-        img = ImageEnhance.Contrast(img).enhance(2.0)
-        # 3. Threshold (binarization)
-        img = img.point(lambda x: 0 if x < 160 else 255, '1')
-        # 4. Noise removal (median filter)
+        # 2. Increase contrast more aggressively for scanned docs
+        img = ImageEnhance.Contrast(img).enhance(2.5)
+        # 3. Sharpen
+        img = ImageEnhance.Sharpness(img).enhance(1.5)
+        # 4. Adaptive threshold (better for varied lighting)
+        img = img.point(lambda x: 0 if x < 140 else 255, '1')
+        # 5. Noise removal (median filter)
         img = img.filter(ImageFilter.MedianFilter(size=3))
-        # 5. Scale up small images
+        # 6. Scale up small images for better recognition
         width, height = img.size
-        if width < 1200:
-            ratio = 1200 / width
-            img = img.resize((int(width * ratio), int(height * ratio)), Image.LANCZOS)
-        # 6. Convert back to RGB for Tesseract
+        if width < 1500:
+            ratio = 1500 / width
+            img = img.resize((int(width * ratio), int(height * ratio)), Image.Resampling.LANCZOS)
+        # 7. Convert back to RGB for Tesseract
         img = img.convert('RGB')
         return img
 

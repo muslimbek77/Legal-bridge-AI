@@ -132,10 +132,12 @@ class ContractDetailSerializer(serializers.ModelSerializer):
 class ContractUploadSerializer(serializers.ModelSerializer):
     """Serializer for contract upload."""
     
+    auto_analyze = serializers.BooleanField(write_only=True, default=True)
+    
     class Meta:
         model = Contract
         fields = [
-            'id', 'original_file', 'title', 'contract_type', 'notes', 'status', 'created_at'
+            'id', 'original_file', 'title', 'contract_type', 'notes', 'status', 'created_at', 'auto_analyze'
         ]
         read_only_fields = ['id', 'status', 'created_at']
     
@@ -159,13 +161,25 @@ class ContractUploadSerializer(serializers.ModelSerializer):
         return value
     
     def create(self, validated_data):
+        auto_analyze = validated_data.pop('auto_analyze', True)
+        
         file = validated_data['original_file']
         validated_data['original_filename'] = file.name
         validated_data['file_type'] = file.name.split('.')[-1].lower()
         validated_data['file_size'] = file.size
         validated_data['uploaded_by'] = self.context['request'].user
         
-        return super().create(validated_data)
+        contract = super().create(validated_data)
+        
+        # Trigger automatic analysis if requested
+        if auto_analyze:
+            contract.status = Contract.Status.PROCESSING
+            contract.save()
+            
+            from apps.analysis.tasks import analyze_contract_task
+            analyze_contract_task.delay(str(contract.id))
+        
+        return contract
 
 
 class ContractUpdateSerializer(serializers.ModelSerializer):
