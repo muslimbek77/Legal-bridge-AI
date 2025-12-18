@@ -218,10 +218,14 @@ Stability tweaks for local development:
 - broker_pool_limit=0: Avoids Redis/Kombu fd mapping issues (KeyError in _fd_to_chan)
 - worker_prefetch_multiplier=1: Reduce task prefetching to avoid starvation
 - broker_connection_retry_on_startup=True: Make worker resilient on startup
+- task_soft_time_limit=1200s: Soft limit (20 min) for graceful shutdown
+- task_time_limit=1500s: Hard limit (25 min) for force kill if soft fails
 """
 CELERY_BROKER_POOL_LIMIT = 0
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+CELERY_TASK_SOFT_TIME_LIMIT = 1200  # 20 minutes
+CELERY_TASK_TIME_LIMIT = 1500  # 25 minutes
 
 # DRF Spectacular (API Documentation)
 SPECTACULAR_SETTINGS = {

@@ -11,7 +11,7 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 
-@shared_task(bind=True, max_retries=3, soft_time_limit=300, time_limit=360)
+@shared_task(bind=True, max_retries=3, soft_time_limit=1200, time_limit=1500)
 def analyze_contract_task(self, contract_id: str):
     """
     Asynchronous task for analyzing a contract.
