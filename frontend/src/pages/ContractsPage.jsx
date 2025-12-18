@@ -43,9 +43,9 @@ export default function ContractsPage() {
     mutationFn: (ids) =>
       Promise.all(ids.map((id) => contractsService.deleteContract(id))),
     onSuccess: () => {
-      queryClient.invalidateQueries(["contracts"]);
-      toast.success("Shartnoma o'chirildi");
       setDeleteModalOpen(false);
+      toast.success("Shartnoma o'chirildi");
+      queryClient.invalidateQueries(["contracts"]);
     },
     onError: () => {
       toast.error("Xatolik yuz berdi");
@@ -373,13 +373,8 @@ export default function ContractsPage() {
           >
             Bekor qilish
           </button>
-          <button
-            type="button"
-            className="btn-danger"
-            onClick={confirmDelete}
-            disabled={deleteMutation.isPending}
-          >
-            {deleteMutation.isPending ? "O'chirilmoqda..." : "O'chirish"}
+          <button type="button" className="btn-danger" onClick={confirmDelete}>
+            O'chirish
           </button>
         </div>
       </Modal>
