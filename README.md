@@ -1,3 +1,35 @@
+# Legal Bridge AI
+## OCR Configuration (Cyrillic-friendly)
+
+Environment variables (optional):
+
+- `OCR_PAGES_MAX`: Max number of PDF pages to OCR. `0` = no limit. Example: `3`.
+- `OCR_DPI`: Rasterization DPI used for `pdf2image`. Default `300`.
+- `USE_PADDLE`: `1` to enable PaddleOCR fallback (if installed) for tricky Cyrillic scans.
+- `OCR_CHUNK_SIZE`: Process PDFs in page chunks to reduce memory/time on long files (requires PyMuPDF). Example: `5` (process 5 pages per chunk). Default: `0` (disabled).
+
+Runtime requirements:
+
+- Tesseract 5.x with languages: `uzb` (Uzbek Cyrillic), `uzb_latn` (Uzbek Latin), `rus` (Russian)
+- PyMuPDF (optional fallback) for PDF rendering when Poppler is missing; also used for chunked processing
+
+## Quick Benchmark
+
+Run a quick OCR + parser benchmark against a PDF:
+
+```bash
+cd /home/rasulbek/muslim-projects/Legal-bridge-AI
+export OCR_PAGES_MAX=3
+export OCR_DPI=300
+/home/rasulbek/muslim-projects/Legal-bridge-AI/backend/venv/bin/python scripts/benchmark.py /path/to/your.pdf
+```
+
+Output includes: `scanned`, `ocr_confidence`, `chars`, `words`, `language`, `sections_count`, and timings.
+
+## Structured LLM Analysis
+
+RAG/LLM now supports structured JSON output for key sections (subject/liability/price). See `section_analyses_structured` in pipeline results.
+
 # Legal Bridge AI 🏛️⚖️
 
 O'zbekiston Respublikasi qonunchiligiga asoslangan shartnomalarni avtomatik tahlil qilish tizimi.

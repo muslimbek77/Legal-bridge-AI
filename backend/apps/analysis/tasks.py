@@ -5,12 +5,13 @@ Celery tasks for contract analysis.
 import time
 import logging
 from celery import shared_task
+from celery.exceptions import SoftTimeLimitExceeded
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
 
-@shared_task(bind=True, max_retries=3)
+@shared_task(bind=True, max_retries=3, soft_time_limit=300, time_limit=360)
 def analyze_contract_task(self, contract_id: str):
     """
     Asynchronous task for analyzing a contract.
@@ -19,8 +20,17 @@ def analyze_contract_task(self, contract_id: str):
     from apps.analysis.models import AnalysisResult
     from ai_engine.pipeline import ContractAnalysisPipeline
     
+    logger.info(f"[CELERY] Task started for contract: {contract_id}")
+    
     try:
         contract = Contract.objects.get(id=contract_id)
+        file_path = None
+        try:
+            file_field = getattr(contract, 'original_file', None)
+            file_path = file_field.path if file_field else None
+        except Exception:
+            file_path = None
+        logger.info(f"[CELERY] Contract loaded: {contract.title}, file: {file_path or 'No file'}")
         logger.info(f"Starting analysis for contract: {contract_id}")
         
         start_time = time.time()
@@ -32,10 +42,13 @@ def analyze_contract_task(self, contract_id: str):
         )
         
         # Initialize AI pipeline
+        logger.info(f"[CELERY] Initializing AI pipeline...")
         pipeline = ContractAnalysisPipeline()
         
         # Run analysis
+        logger.info(f"[CELERY] Running pipeline.analyze()...")
         result = pipeline.analyze(contract)
+        logger.info(f"[CELERY] Pipeline completed. Score: {result.get('overall_score', 'N/A')}")
         
         # Update analysis result
         analysis.overall_score = result.get('overall_score', 0)
@@ -80,9 +93,23 @@ def analyze_contract_task(self, contract_id: str):
     except Contract.DoesNotExist:
         logger.error(f"Contract not found: {contract_id}")
         raise
+    except SoftTimeLimitExceeded as exc:
+        logger.error(f"Analysis soft time limit exceeded for contract {contract_id}")
+        try:
+            from apps.analysis.models import AnalysisResult
+            analysis = AnalysisResult.objects.filter(
+                contract_id=contract_id,
+                status=AnalysisResult.AnalysisStatus.IN_PROGRESS
+            ).latest('created_at')
+            analysis.status = AnalysisResult.AnalysisStatus.FAILED
+            analysis.error_message = 'Soft time limit exceeded'
+            analysis.save()
+        except Exception:
+            pass
+        raise exc
         
     except Exception as exc:
-        logger.error(f"Analysis failed for contract {contract_id}: {exc}")
+        logger.error(f"[CELERY] Analysis failed for contract {contract_id}: {exc}", exc_info=True)
         
         # Update analysis status if exists
         try:

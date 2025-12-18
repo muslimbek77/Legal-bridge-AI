@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.coverage*
+
+# Virtual envs
+.venv/
+venv/
+backend/venv/
+backend/.venv/
+
+# Node / frontend
+node_modules/
+frontend/node_modules/
+frontend/.next/
+frontend/build/
+frontend/dist/
+
+# Django runtime
+backend/logs/
+backend/media/*
+!backend/media/.gitkeep
+backend/staticfiles/*
+!backend/staticfiles/.gitkeep
+
+# VCS/IDE
+.git/
+.gitignore
+.env
+.env.*
+*.swp
+*.swo
+.idea/
+.vscode/
+.DS_Store
+
+# Docker
+**/Dockerfile*
+**/docker-compose*.yml
+
+# Other
+*.log

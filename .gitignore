@@ -5,7 +5,7 @@ __pycache__/
 
 # C extensions
 *.so
-
+Food_city_shartnoma.pdf
 # Distribution / packaging
 .Python
 build/

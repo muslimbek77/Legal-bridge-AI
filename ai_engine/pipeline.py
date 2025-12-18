@@ -89,11 +89,14 @@ class ContractAnalysisPipeline:
             Analysis results dictionary
         """
         start_time = time.time()
+        t_ocr = t_parse = t_spelling = t_compliance = t_risk = t_rag = 0.0
         
         try:
             # Step 1: Extract text
             logger.info(f"Starting analysis for contract: {contract.id}")
+            _t0 = time.time()
             text, ocr_confidence, is_scanned = self._extract_text(contract)
+            t_ocr = time.time() - _t0
             
             # Update contract with extracted text
             contract.extracted_text = text
@@ -103,7 +106,9 @@ class ContractAnalysisPipeline:
             
             # Step 2: Parse contract
             logger.info("Parsing contract structure...")
+            _t0 = time.time()
             sections, metadata = self.parser.parse(text)
+            t_parse = time.time() - _t0
             
             # Step 3: Detect contract type
             contract_type = self._detect_contract_type(text, metadata)
@@ -196,15 +201,19 @@ class ContractAnalysisPipeline:
             issues = []
             if self.config.analyze_compliance:
                 logger.info("Checking legal compliance...")
+                _t0 = time.time()
                 issues = self.compliance_engine.check_compliance(
                     sections, metadata, contract_type
                 )
+                t_compliance = time.time() - _t0
             
             # Step 5.5: Check spelling errors
             spelling_errors = []
             if self.config.analyze_spelling:
                 logger.info("Checking spelling errors...")
+                _t0 = time.time()
                 spelling_errors = self.spelling_checker.check_text(text, metadata.language)
+                t_spelling = time.time() - _t0
                 # Convert spelling errors to compliance issues
                 for sp_error in spelling_errors:
                     issues.append(ComplianceIssue(
@@ -225,15 +234,19 @@ class ContractAnalysisPipeline:
             risk_score = None
             if self.config.analyze_risks:
                 logger.info("Calculating risk score...")
+                _t0 = time.time()
                 risk_score = self.risk_engine.calculate_score(
                     sections, metadata, issues, contract_type
                 )
+                t_risk = time.time() - _t0
             
             # Step 7: Enhanced analysis with RAG (if available)
             enhanced_analysis = {}
             if self.config.use_rag and self.rag:
                 logger.info("Running enhanced RAG analysis...")
+                _t0 = time.time()
                 enhanced_analysis = self._run_rag_analysis(text, sections, contract_type)
+                t_rag = time.time() - _t0
             
             # Step 8: Generate summary
             summary = self._generate_summary(sections, metadata, issues, risk_score)
@@ -262,6 +275,14 @@ class ContractAnalysisPipeline:
                 'recommendations': risk_score.recommendations if risk_score else [],
                 'enhanced_analysis': enhanced_analysis,
                 'processing_time': processing_time,
+                'metrics': {
+                    't_ocr': round(t_ocr, 3),
+                    't_parse': round(t_parse, 3),
+                    't_spelling': round(t_spelling, 3),
+                    't_compliance': round(t_compliance, 3),
+                    't_risk': round(t_risk, 3),
+                    't_rag': round(t_rag, 3),
+                },
                 'model_used': self.config.llm_model,
                 'is_valid_contract': True,
             }
@@ -396,11 +417,27 @@ class ContractAnalysisPipeline:
                 pass
         
         if metadata.currency:
-            contract.currency = metadata.currency
+            if metadata.currency:
+                contract.currency = metadata.currency
         
-        contract.language = metadata.language
-        contract.contract_type = contract_type
-        contract.save()
+            from apps.contracts.models import Contract as ContractModel
+
+            language_defaults = {
+                ContractModel.Language.UZ_LATN,
+                ContractModel.Language.MIXED,
+                '',
+            }
+            if metadata.language and contract.language in language_defaults:
+                contract.language = metadata.language
+        
+            contract_type_defaults = {
+                ContractModel.ContractType.OTHER,
+                '',
+            }
+            if contract_type and contract.contract_type in contract_type_defaults:
+                contract.contract_type = contract_type
+        
+            contract.save()
     
     def _save_sections(self, contract, sections: List[Section]):
         """Save parsed sections to database."""
@@ -446,6 +483,7 @@ class ContractAnalysisPipeline:
             # Analyze key sections
             key_sections = [SectionType.SUBJECT, SectionType.LIABILITY, SectionType.PRICE]
             section_analyses = {}
+            section_analyses_structured = {}
             
             for section in sections:
                 if section.section_type in key_sections:
@@ -454,8 +492,18 @@ class ContractAnalysisPipeline:
                         contract_type
                     )
                     section_analyses[section.section_type.value] = analysis.get('analysis', '')
+                    # Try structured analysis
+                    try:
+                        structured = self.rag.analyze_clause_structured(
+                            section.content[:800],
+                            contract_type
+                        )
+                        section_analyses_structured[section.section_type.value] = structured.get('analysis_structured')
+                    except Exception as e:
+                        section_analyses_structured[section.section_type.value] = {'error': str(e)}
             
             results['section_analyses'] = section_analyses
+            results['section_analyses_structured'] = section_analyses_structured
             
         except Exception as e:
             logger.error(f"RAG analysis failed: {e}")

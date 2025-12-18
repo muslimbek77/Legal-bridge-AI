@@ -12,6 +12,8 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 
+
+
 class LegalRAG:
     """
     RAG system for legal document retrieval and generation.
@@ -236,19 +238,26 @@ class LegalRAG:
             return "LLM client not available (neither Ollama nor OpenAI configured)"
         
         # Build context from documents
-        context = "\n\n".join([
-            f"Qonun: {doc.get('metadata', {}).get('law_name', "Noma'lum")}\n"
-            f"Modda: {doc.get('metadata', {}).get('article_number', '')}\n"
-            f"Matn: {doc['text']}"
-            for doc in context_docs
-        ])
+        context_lines = []
+        for doc in context_docs:
+            law_name = doc.get('metadata', {}).get('law_name') or "Noma'lum"
+            article_number = doc.get('metadata', {}).get('article_number', '')
+            text = doc['text']
+            context_lines.append(
+                f"Qonun: {law_name}\n"
+                f"Modda: {article_number}\n"
+                f"Matn: {text}"
+            )
+        context = "\n\n".join(context_lines)
         
         # Default system prompt
         if not system_prompt:
             system_prompt = """Siz O'zbekiston Respublikasi qonunchiligi bo'yicha ekspert yuridik yordamchisiz.
-Foydalanuvchi savoliga quyidagi qonun manbalariga asoslanib javob bering.
-Javobingiz aniq, lo'nda va qonunga mos bo'lsin.
-Agar ma'lumot yetarli bo'lmasa, shuni ayting."""
+Javobni quyidagi talablarga qat'iy rioya qilgan holda bering:
+- Faqat kontekstdagi qonun moddalariga tayangan holda xulosa qiling
+- Aniq, lo'nda va amaliy tavsiyalar bering
+- Noma'lum bo'lsa: "Aniq ma'lumot yetarli emas" deb yozing
+- Tuzilishi: 1) Moslik 2) Xavflar 3) Tavsiya 4) Zarur o'zgartirish matni"""
         
         # Build prompt
         full_prompt = f"""KONTEKST (Tegishli qonun moddalari):
@@ -309,15 +318,16 @@ JAVOB:"""
         relevant_laws = self.search_laws(clause_text, contract_type)
         
         # Generate analysis
-        analysis_prompt = f"""Quyidagi shartnoma bandini O'zbekiston qonunchiligi nuqtai nazaridan tahlil qiling:
+        analysis_prompt = f"""Quyidagi shartnoma bandini O'zbekiston qonunchiligi nuqtai nazaridan tahlil qiling.
 
-BAND:
-{clause_text}
+    BAND:
+    {clause_text}
 
-Quyidagilarni aniqlang:
-1. Band qonunga mosmi?
-2. Qanday xavflar bor?
-3. Nima o'zgartirish kerak?"""
+    Talab qilinadigan chiqish:
+    1) Moslik: qisqa baho (mos/mos emas) va izoh
+    2) Xavflar: 2-4 punkt, aniq ifoda
+    3) Tavsiya: 1-3 aniq tavsiya
+    4) O'zgartirish matni: zarur bo'lsa, taklif etilgan band matni"""
         
         analysis = self.generate_response(analysis_prompt, relevant_laws)
         
@@ -326,6 +336,115 @@ Quyidagilarni aniqlang:
             'relevant_laws': relevant_laws,
             'analysis': analysis,
         }
+
+    def analyze_clause_structured(self, clause_text: str, contract_type: str = None) -> Dict:
+        """Analyze clause and return structured JSON dict with graceful fallback.
+
+        Returns keys: compliance (str), risks (list[str]), recommendations (list[str]), rewrite (str)
+        """
+        # Retrieve relevant laws as context
+        relevant_laws = self.search_laws(clause_text, contract_type)
+
+        # Strict JSON-only instruction
+        system_prompt = (
+            "Siz O'zbekiston qonunchiligi bo'yicha ekspert yuridik yordamchisiz. "
+            "Faqat JSON qaytaring; matnli izohlar, prefix/suffix kerak emas."
+        )
+
+        json_schema_hint = (
+            "Qaytaring faqat quyidagi JSON formatda (boshqa hech narsa qo'shmang):\n"
+            "{\n"
+            "  \"compliance\": \"mos|mos emas|noaniq\",\n"
+            "  \"risks\": [\"...\"],\n"
+            "  \"recommendations\": [\"...\"],\n"
+            "  \"rewrite\": \"...\"\n"
+            "}"
+        )
+
+        prompt = (
+            f"Quyidagi bandni tahlil qiling va qat'iy JSON qaytaring.\n\n"
+            f"BAND:\n{clause_text}\n\n"
+            f"Talablar:\n"
+            f"- compliance: 'mos', 'mos emas' yoki 'noaniq'\n"
+            f"- risks: 2-4 aniq punkt\n"
+            f"- recommendations: 1-3 amaliy tavsiya\n"
+            f"- rewrite: kerak bo'lsa, taklif etilgan band matni\n\n"
+            f"{json_schema_hint}"
+        )
+
+        # Build context and call LLM
+        try:
+            if not self._initialized:
+                self.initialize()
+            if not self.llm_type:
+                raise RuntimeError("LLM backend not configured")
+
+            # Build context lines like in generate_response
+            context_lines = []
+            for doc in relevant_laws:
+                law_name = doc.get('metadata', {}).get('law_name') or "Noma'lum"
+                article_number = doc.get('metadata', {}).get('article_number', '')
+                text = doc['text']
+                context_lines.append(
+                    f"Qonun: {law_name}\nModda: {article_number}\nMatn: {text}"
+                )
+            context = "\n\n".join(context_lines)
+
+            user_content = f"KONTEKST:\n{context}\n\n{prompt}"
+
+            if self.llm_type == 'ollama':
+                response = self.llm_client.chat(
+                    model=self.llm_model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_content},
+                    ],
+                    options={"temperature": 0.1, "num_predict": 768},
+                )
+                content = response['message']['content']
+            else:
+                response = self.openai_client.chat.completions.create(
+                    model=self.openai_model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_content},
+                    ],
+                    temperature=0.1,
+                    max_tokens=768,
+                )
+                content = response.choices[0].message.content
+
+            import json
+            try:
+                data = json.loads(content)
+                # Minimal validation and coercion
+                result = {
+                    'compliance': str(data.get('compliance', 'noaniq')),
+                    'risks': list(data.get('risks', []))[:6],
+                    'recommendations': list(data.get('recommendations', []))[:6],
+                    'rewrite': str(data.get('rewrite', '')),
+                }
+            except Exception:
+                # Fallback: return raw content mapped into rewrite, minimal fields
+                result = {
+                    'compliance': 'noaniq',
+                    'risks': [],
+                    'recommendations': [],
+                    'rewrite': content.strip(),
+                }
+
+            return {
+                'clause': clause_text,
+                'relevant_laws': relevant_laws,
+                'analysis_structured': result,
+            }
+        except Exception as e:
+            logger.error(f"Structured clause analysis failed: {e}")
+            return {
+                'clause': clause_text,
+                'relevant_laws': relevant_laws,
+                'error': str(e),
+            }
     
     def get_law_reference(self, law_name: str, article_number: str) -> Optional[Dict]:
         """

@@ -188,11 +188,17 @@ class ContractViewSet(viewsets.ModelViewSet):
         from django.db.models.functions import TruncMonth
         from datetime import datetime, timedelta
         
-        # For unauthenticated users, show total stats
+        # Foydalanuvchi faqat o'z shartnomalarini ko'radi (admin bo'lmasa)
         if request.user.is_authenticated:
-            queryset = self.get_queryset()
+            user = request.user
+            if hasattr(user, 'is_admin') and user.is_admin:
+                queryset = Contract.objects.all()
+            else:
+                queryset = Contract.objects.filter(
+                    db_models.Q(uploaded_by=user) | db_models.Q(assigned_to=user)
+                )
         else:
-            queryset = Contract.objects.all()
+            queryset = Contract.objects.none()
         
         # Asosiy statistika
         total = queryset.count()
@@ -263,10 +269,10 @@ class ContractViewSet(viewsets.ModelViewSet):
                 'counterparty': contract.party_b or contract.party_a or None,
             })
         
-        # Muvofiqlik darajasi
+        # Muvofiqlik darajasi (o'rtacha compliance_score)
         if analyses.exists():
-            compliant_count = analyses.filter(overall_score__lte=30).count()
-            compliance_rate = round((compliant_count / analyses.count()) * 100)
+            avg_compliance = analyses.aggregate(avg=Avg('compliance_score'))['avg'] or 0
+            compliance_rate = round(avg_compliance)
         else:
             compliance_rate = 0
         

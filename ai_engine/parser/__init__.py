@@ -87,66 +87,84 @@ class ContractParser:
         SectionType.SUBJECT: [
             r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:SHARTNOMA\s+PREDMETI|ПРЕДМЕТ\s+ДОГОВОРА|Shartnoma\s+mavzusi)",
             r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:PREDMET|MAVZU)",
+            r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:ШАРТНОМА\s+ПРЕДМЕТИ|Шартнома\s+мавзуси)",
         ],
         SectionType.PARTIES: [
             r"(?i)(?:^|\n)\s*(?:TOMONLAR|СТОРОНЫ|Taraflar)",
             r"(?i)bir\s+tomondan.*boshqa\s+tomondan",
             r"(?i)с\s+одной\s+стороны.*с\s+другой\s+стороны",
+            r"(?i)(?:^|\n)\s*(?:ТОМОНЛАР|Тарафлар)",
+            r"(?i)бир\s+томондан.*иккинчи\s+томондан",
         ],
         SectionType.RIGHTS: [
             r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:TOMONLARNING\s+HUQUQLARI|ПРАВА\s+СТОРОН|Huquqlar)",
+            r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:ҲУҚУҚЛАР|Ҳуқуқлар)",
         ],
         SectionType.OBLIGATIONS: [
             r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:TOMONLARNING\s+MAJBURIYATLARI|ОБЯЗАННОСТИ\s+СТОРОН|Majburiyatlar)",
             r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:HUQUQ\s+VA\s+MAJBURIYATLAR|ПРАВА\s+И\s+ОБЯЗАННОСТИ)",
+            r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:МАЖБУРИЯТЛАР|Мажбуриятлар|ҲУҚУҚ\s+ВА\s+МАЖБУРИЯТЛАР)",
         ],
         SectionType.PRICE: [
             r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:SHARTNOMA\s+NARXI|ЦЕНА\s+ДОГОВОРА|СТОИМОСТЬ)",
             r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:NARX\s+VA\s+TO['']LOV|ЦЕНА\s+И\s+ПОРЯДОК\s+РАСЧЕТОВ)",
             r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:TO['']LOV\s+TARTIBI|ПОРЯДОК\s+ОПЛАТЫ)",
+            r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:ШАРТНОМА\s+НАРХИ|НАРХ\s+ВА\s+ТЎЛОВ|ТЎЛОВ\s+ТАРТИБИ)",
         ],
         SectionType.DELIVERY: [
             r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:YETKAZIB\s+BERISH|ПОСТАВКА|ДОСТАВКА)",
             r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:TOPSHIRISH\s+TARTIBI|ПОРЯДОК\s+СДАЧИ)",
+            r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:ЕТКАЗИБ\s+БЕРИШ|ТОПШИРИШ\s+ТАРТИБИ)",
         ],
         SectionType.QUALITY: [
             r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:SIFAT\s+TALABLARI|ТРЕБОВАНИЯ\s+К\s+КАЧЕСТВУ|Sifat)",
+            r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:СИФАТ\s+ТАЛАБЛАРИ)",
         ],
         SectionType.WARRANTY: [
             r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:KAFOLAT|ГАРАНТИЯ|ГАРАНТИЙНЫЕ)",
+            r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:КАФОЛАТ)",
         ],
         SectionType.LIABILITY: [
             r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:JAVOBGARLIK|ОТВЕТСТВЕННОСТЬ)",
             r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:MODDIY\s+JAVOBGARLIK|МАТЕРИАЛЬНАЯ\s+ОТВЕТСТВЕННОСТЬ)",
+            r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:ЖАВОБГАРЛИК)",
         ],
         SectionType.FORCE_MAJEURE: [
             r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:FORS-MAJOR|ФОРС-МАЖОР|Favqulodda\s+holatlar)",
+            r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:ФОРС-МАЖОР)",
         ],
         SectionType.DISPUTE: [
             r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:NIZOLARNI\s+HAL\s+QILISH|РАЗРЕШЕНИЕ\s+СПОРОВ|Nizolar)",
+            r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:НИЗОЛАРНИ\s+ҲАЛ\s+ҚИЛИШ|НИЗОЛАР)",
         ],
         SectionType.TERM: [
             r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:SHARTNOMA\s+MUDDATI|СРОК\s+ДЕЙСТВИЯ|СРОК\s+ДОГОВОРА)",
             r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:AMAL\s+QILISH\s+MUDDATI)",
+            r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:ШАРТНОМА\s+МУДДАТИ|АМАЛ\s+ҚИЛИШ\s+МУДДАТИ)",
         ],
         SectionType.TERMINATION: [
             r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:SHARTNOMANI\s+BEKOR\s+QILISH|РАСТОРЖЕНИЕ\s+ДОГОВОРА)",
+            r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:ШАРТНОМАНИ\s+БЕКОР\s+ҚИЛИШ)",
         ],
         SectionType.CONFIDENTIAL: [
             r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:MAXFIYLIK|КОНФИДЕНЦИАЛЬНОСТЬ)",
+            r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:МАХФИЙЛИК)",
         ],
         SectionType.ADDITIONAL: [
             r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:QO['']SHIMCHA\s+SHARTLAR|ДОПОЛНИТЕЛЬНЫЕ\s+УСЛОВИЯ)",
             r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:BOSHQA\s+SHARTLAR|ПРОЧИЕ\s+УСЛОВИЯ)",
             r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:YAKUNIY\s+QOIDALAR|ЗАКЛЮЧИТЕЛЬНЫЕ\s+ПОЛОЖЕНИЯ)",
+            r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:ҚЎШИМЧА\s+ШАРТЛАР|БОШҚА\s+ШАРТЛАР|ЯКУНИЙ\s+ҚОИДАЛАР)",
         ],
         SectionType.REQUISITES: [
             r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:TOMONLARNING\s+REKVIZITLARI|РЕКВИЗИТЫ\s+СТОРОН)",
             r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:YURIDIK\s+MANZILLAR|ЮРИДИЧЕСКИЕ\s+АДРЕСА)",
+            r"(?i)(?:^|\n)\s*(?:\d+[\.\)]\s*)?(?:ТОМОНЛАРНИНГ\s+РЕКВИЗИТЛАРИ|ЮРИДИК\s+МАНЗИЛЛАР)",
         ],
         SectionType.SIGNATURES: [
             r"(?i)(?:^|\n)\s*(?:IMZOLAR|ПОДПИСИ\s+СТОРОН)",
             r"(?i)M\.O['']\..*M\.O['']",  # M.O'. pattern for stamps
+            r"(?i)(?:^|\n)\s*(?:ИМЗОЛАР)",
         ],
     }
     
@@ -169,6 +187,16 @@ class ContractParser:
             r"(?i)(\d[\d\s]*[\.,]?\d*)\s*(?:so['']m|сум|UZS|USD|\$)",
             r"(?i)jami\s*[:=]?\s*(\d[\d\s]*[\.,]?\d*)",
             r"(?i)итого\s*[:=]?\s*(\d[\d\s]*[\.,]?\d*)",
+        ],
+    }
+    PARTY_PATTERNS = {
+        'party_a_name': [
+            r"(?im)(?:1[-\s]?tomon|birinchi\s+tomon|buyurtmachi|zakazchik|заказчик)[\s:–-]+(.+?)(?=\n|$)",
+            r"(?im)taraflar\s*\(birinchi\s+tomoni\)[:\s]+(.+?)(?=\n|$)",
+        ],
+        'party_b_name': [
+            r"(?im)(?:2[-\s]?tomon|ikkinchi\s+tomon|ijrochi|pudratchi|podryadchik|исполнитель)[\s:–-]+(.+?)(?=\n|$)",
+            r"(?im)taraflar\s*\(ikkinchi\s+tomoni\)[:\s]+(.+?)(?=\n|$)",
         ],
     }
     
@@ -195,6 +223,8 @@ class ContractParser:
         Returns:
             Tuple of (sections list, metadata)
         """
+        # Normalize text to improve section/metadata detection
+        text = self._normalize_text(text)
         # Extract metadata
         metadata = self._extract_metadata(text)
         
@@ -209,6 +239,21 @@ class ContractParser:
             section.clauses = self._extract_clauses(section.content, section.section_type)
         
         return sections, metadata
+
+    def _normalize_text(self, text: str) -> str:
+        """Normalize common OCR artifacts (hyphenation, apostrophes, spaces, EOLs)."""
+        if not text:
+            return text
+        # Join hyphenation broken at EOL: word-\nword -> wordword
+        text = re.sub(r"(\w)-\n(\w)", r"\1\2", text)
+        # Normalize apostrophes/backticks/quotes to a single apostrophe
+        text = text.replace("`", "'")
+        text = text.replace("’", "'").replace("ʻ", "'").replace("ʼ", "'").replace("‘", "'")
+        # Collapse multiple spaces
+        text = re.sub(r"[ \t]{2,}", " ", text)
+        # Normalize line endings
+        text = text.replace("\r\n", "\n").replace("\r", "\n")
+        return text
     
     def _extract_metadata(self, text: str) -> ContractMetadata:
         """Extract metadata from contract text."""
@@ -254,12 +299,24 @@ class ContractParser:
         # Detect language
         metadata.language = self._detect_language(text)
         
+        metadata.party_a_name = self._extract_party(text, 'party_a_name')
+        metadata.party_b_name = self._extract_party(text, 'party_b_name')
+
         return metadata
+
+    def _extract_party(self, text: str, field: str) -> Optional[str]:
+        """Extract party name using defined patterns."""
+        for pattern in self.PARTY_PATTERNS.get(field, []):
+            match = re.search(pattern, text)
+            if match:
+                return match.group(1).strip()
+        return None
     
     def _detect_language(self, text: str) -> str:
         """Detect contract language."""
         cyrillic = set('абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ')
         russian_specific = set('ъыэё')
+        uzbek_specific = set("ғҳқўшчђҷ")
         
         cyrillic_count = sum(1 for c in text if c in cyrillic)
         russian_count = sum(1 for c in text if c in russian_specific)
@@ -271,7 +328,11 @@ class ContractParser:
         cyrillic_ratio = cyrillic_count / total_letters
         
         if cyrillic_ratio > 0.5:
-            if russian_count > 10:
+            # prefer Uzbek Cyrillic if Uzbek-specific letters are present
+            uzbek_indicator = sum(1 for c in text if c in uzbek_specific)
+            if uzbek_indicator >= 2:
+                return 'uz-cyrl'
+            if russian_count > 10 and uzbek_indicator == 0:
                 return 'ru'
             return 'uz-cyrl'
         return 'uz-latn'

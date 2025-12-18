@@ -19,16 +19,17 @@ if str(AI_ENGINE_DIR.parent) not in sys.path:
 # Environment variables
 env = environ.Env(
     DEBUG=(bool, False),
-    ALLOWED_HOSTS=(list, ['localhost', '127.0.0.1']),
+    ALLOWED_HOSTS=(list, ['*']),
 )
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 # Security
 SECRET_KEY = env('SECRET_KEY', default='django-insecure-change-this-in-production')
 DEBUG = env('DEBUG')
-ALLOWED_HOSTS = env('ALLOWED_HOSTS')
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*'])
 # Ngrok domenini ruxsat berilgan hostlarga qo'shish
-ALLOWED_HOSTS += ['6383cce079a4.ngrok-free.app']
+if '6383cce079a4.ngrok-free.app' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('6383cce079a4.ngrok-free.app')
 
 # Application definition
 DJANGO_APPS = [
