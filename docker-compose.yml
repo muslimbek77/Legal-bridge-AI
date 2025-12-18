@@ -78,7 +78,7 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     container_name: legalbridge-celery
-    command: celery -A config worker -l info --concurrency=2 --hostname=worker@%h
+    command: celery -A config worker -l info --concurrency=2 --hostname=worker@%h --soft-time-limit=1200 --time-limit=1500
     volumes:
       - ./backend:/app
       - media_data:/app/media

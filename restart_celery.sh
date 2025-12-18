@@ -28,6 +28,8 @@ celery -A config worker -l INFO \
 	--concurrency=2 \
 	--without-mingle \
 	--without-gossip \
+	--soft-time-limit=1200 \
+	--time-limit=1500 \
 	--logfile=/tmp/celery_worker.log 2>&1 &
 
 # Worker PIDni saqlash
