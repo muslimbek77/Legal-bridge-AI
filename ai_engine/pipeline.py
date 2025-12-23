@@ -318,8 +318,11 @@ class ContractAnalysisPipeline:
                 'mahsulot yetkazish', 'товар'
             ],
             'work': [
-                'pudrat', 'подряд', 'qurilish', 'ta\'mirlash',
-                'строительство', 'ремонт'
+                # Uzbek (Latin) and Russian
+                'pudrat', 'подряд', 'qurilish', 'qurish', "ta'mirlash",
+                'строительство', 'ремонт',
+                # Uzbek (Cyrillic) variants
+                'пудрат', 'қурилиш', 'курилиш', 'қуриш', 'иншоот', 'иншоат'
             ],
             'labor': [
                 'mehnat shartnomasi', 'трудовой договор', 'ish haqi',
@@ -417,27 +420,27 @@ class ContractAnalysisPipeline:
                 pass
         
         if metadata.currency:
-            if metadata.currency:
-                contract.currency = metadata.currency
+            contract.currency = metadata.currency
         
-            from apps.contracts.models import Contract as ContractModel
+        from apps.contracts.models import Contract as ContractModel
 
-            language_defaults = {
-                ContractModel.Language.UZ_LATN,
-                ContractModel.Language.MIXED,
-                '',
-            }
-            if metadata.language and contract.language in language_defaults:
-                contract.language = metadata.language
+        language_defaults = {
+            ContractModel.Language.UZ_LATN,
+            ContractModel.Language.UZ_CYRL,
+            ContractModel.Language.MIXED,
+            '',
+        }
+        if metadata.language and contract.language in language_defaults:
+            contract.language = metadata.language
         
-            contract_type_defaults = {
-                ContractModel.ContractType.OTHER,
-                '',
-            }
-            if contract_type and contract.contract_type in contract_type_defaults:
-                contract.contract_type = contract_type
+        contract_type_defaults = {
+            ContractModel.ContractType.OTHER,
+            '',
+        }
+        if contract_type and contract.contract_type in contract_type_defaults:
+            contract.contract_type = contract_type
         
-            contract.save()
+        contract.save()
     
     def _save_sections(self, contract, sections: List[Section]):
         """Save parsed sections to database."""
