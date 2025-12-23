@@ -11,7 +11,7 @@ from dataclasses import dataclass, asdict
 from ai_engine.ocr import OCRProcessor
 from ai_engine.parser import ContractParser, Section, ContractMetadata, SectionType
 from ai_engine.compliance import LegalComplianceEngine, ComplianceIssue, IssueSeverity, IssueType
-from ai_engine.risk_scoring import RiskScoringEngine, RiskScore
+from ai_engine.risk_scoring import RiskScoringEngine, RiskScore, ClauseAnalysis
 from ai_engine.rag import LegalRAG
 from ai_engine.spelling import SpellingChecker, SpellingError
 
@@ -235,8 +235,20 @@ class ContractAnalysisPipeline:
             if self.config.analyze_risks:
                 logger.info("Calculating risk score...")
                 _t0 = time.time()
+                
+                # Enhanced analysis with RAG for risk scoring (before RAG full analysis)
+                clause_analyses = None
+                if self.config.use_rag and self.rag:
+                    try:
+                        logger.info("Running LLM-based clause analysis for risk scoring...")
+                        clause_analyses = self._run_clause_analyses_for_risk(sections, contract_type)
+                    except Exception as e:
+                        logger.error(f"LLM clause analysis failed: {e}, falling back to traditional scoring")
+                        clause_analyses = None
+                
+                # Pass LLM analyses to risk engine
                 risk_score = self.risk_engine.calculate_score(
-                    sections, metadata, issues, contract_type
+                    sections, metadata, issues, contract_type, clause_analyses
                 )
                 t_risk = time.time() - _t0
             
@@ -470,6 +482,60 @@ class ContractAnalysisPipeline:
                     order=j
                 )
     
+    def _run_clause_analyses_for_risk(self, sections: List[Section], contract_type: str) -> Dict[str, ClauseAnalysis]:
+        """
+        Run structured clause analyses using LLM for risk scoring.
+        Analyzes key sections to determine compliance and risks.
+        """
+        clause_analyses = {}
+        
+        # Tahlil qilish uchun asosiy bo'limlar
+        key_sections = [
+            SectionType.LIABILITY,      # Javobgarlik - xavfli
+            SectionType.PRICE,          # Narx - cheksiz bo'lishi mumkin
+            SectionType.TERM,           # Muddat - muammoli bo'lishi mumkin
+            SectionType.FORCE_MAJEURE,  # Fors-major - cheklash mumkin
+        ]
+        
+        try:
+            for section in sections:
+                if section.section_type in key_sections:
+                    try:
+                        # Get structured analysis from LLM
+                        structured = self.rag.analyze_clause_structured(
+                            section.content[:1000],
+                            contract_type
+                        )
+                        
+                        # Extract data from structured analysis
+                        analysis_data = structured.get('analysis_structured', {})
+                        
+                        # Determine severity based on compliance
+                        compliance = analysis_data.get('compliance', 'noaniq')
+                        severity = 'critical' if compliance == 'mos emas' else 'medium'
+                        
+                        # Create ClauseAnalysis object
+                        clause_analyses[section.section_type.value] = ClauseAnalysis(
+                            clause_text=section.content[:500],
+                            compliance=compliance,
+                            risks=analysis_data.get('risks', []),
+                            recommendations=analysis_data.get('recommendations', []),
+                            severity=severity,
+                            suggested_text=analysis_data.get('rewrite', ''),
+                        )
+                        
+                        logger.info(f"[LLM ANALYSIS] {section.section_type.value}: {compliance}")
+                        
+                    except Exception as e:
+                        logger.warning(f"Failed to analyze section {section.section_type.value}: {e}")
+                        # Continue with next section if one fails
+                        continue
+        
+        except Exception as e:
+            logger.error(f"Clause analysis for risk failed: {e}")
+        
+        return clause_analyses
+    
     def _run_rag_analysis(self, text: str, sections: List[Section], contract_type: str) -> Dict:
         """Run enhanced analysis using RAG."""
         results = {}
@@ -521,37 +587,75 @@ class ContractAnalysisPipeline:
         issues: List[ComplianceIssue],
         risk_score: Optional[RiskScore]
     ) -> str:
-        """Generate analysis summary."""
+        """Generate human-readable analysis summary."""
         summary_parts = []
         
-        # Contract overview
-        summary_parts.append(f"Shartnoma tahlili yakunlandi.")
-        summary_parts.append(f"Til: {metadata.language}")
-        summary_parts.append(f"Bo'limlar soni: {len(sections)}")
+        # Friendly greeting
+        summary_parts.append("📄 SHARTNOMA TAHLILI NATIJALARI")
+        summary_parts.append("=" * 50)
         
-        # Issues summary
+        # Contract overview
+        if metadata.contract_number:
+            summary_parts.append(f"\n📋 Shartnoma raqami: {metadata.contract_number}")
+        if metadata.contract_date:
+            summary_parts.append(f"📅 Sana: {metadata.contract_date}")
+        
+        summary_parts.append(f"\n🔍 Tahlil qilingan bo'limlar: {len(sections)}")
+        
+        # Risk score summary - MAIN MESSAGE
+        if risk_score:
+            score = risk_score.overall_score
+            level = risk_score.risk_level.value
+            
+            if score >= 80:
+                emoji = "✅"
+                message = "A'LO DARAJADA! Shartnoma qonun talablariga to'liq mos keladi."
+            elif score >= 70:
+                emoji = "✅"
+                message = "YAXSHI! Shartnoma asosan qonun talablariga mos."
+            elif score >= 50:
+                emoji = "⚠️"
+                message = "O'RTA DARAJA. Ayrim bandlarni yaxshilash tavsiya etiladi."
+            elif score >= 30:
+                emoji = "⚠️"
+                message = "E'TIBOR BERING! Bir nechta muhim kamchiliklar bor."
+            else:
+                emoji = "🔴"
+                message = "JIDDIY MUAMMOLAR! Shartnomani yurist bilan ko'rib chiqish tavsiya etiladi."
+            
+            summary_parts.append(f"\n{emoji} UMUMIY BAHO: {score}/100")
+            summary_parts.append(f"   {message}")
+        
+        # Issues summary - grouped by severity
         if issues:
             critical_count = sum(1 for i in issues if i.severity.value == 'critical')
             high_count = sum(1 for i in issues if i.severity.value == 'high')
+            medium_count = sum(1 for i in issues if i.severity.value == 'medium')
+            low_count = sum(1 for i in issues if i.severity.value == 'low')
             
-            summary_parts.append(f"\nAniqlangan muammolar: {len(issues)}")
+            summary_parts.append(f"\n📊 Topilgan muammolar:")
+            
             if critical_count:
-                summary_parts.append(f"- Jiddiy: {critical_count}")
+                summary_parts.append(f"   🔴 Jiddiy: {critical_count} ta")
             if high_count:
-                summary_parts.append(f"- Yuqori: {high_count}")
+                summary_parts.append(f"   🟠 Yuqori: {high_count} ta")
+            if medium_count:
+                summary_parts.append(f"   🟡 O'rta: {medium_count} ta")
+            if low_count:
+                summary_parts.append(f"   🟢 Past: {low_count} ta")
+            
+            # Show critical issues briefly
+            critical_issues = [i for i in issues if i.severity.value == 'critical']
+            if critical_issues:
+                summary_parts.append(f"\n⚠️  Jiddiy muammolar:")
+                for issue in critical_issues[:3]:
+                    summary_parts.append(f"   • {issue.title}")
         else:
-            summary_parts.append("\nMuammolar topilmadi.")
+            summary_parts.append(f"\n✅ Jiddiy muammolar topilmadi!")
         
-        # Risk score summary
-        if risk_score:
-            level_text = {
-                'low': "past (qonunga mos)",
-                'medium': "o'rta (takomillashtirish kerak)",
-                'high': "yuqori (jiddiy muammolar bor)"
-            }
-            summary_parts.append(
-                f"\nXavf darajasi: {risk_score.overall_score}/100 - {level_text.get(risk_score.risk_level.value, '')}"
-            )
+        # Positive note
+        if risk_score and risk_score.overall_score >= 70:
+            summary_parts.append(f"\n💡 Shartnoma yaxshi tuzilgan. Kichik takomillashtirishlar bilan ishlatish mumkin.")
         
         return "\n".join(summary_parts)
     
