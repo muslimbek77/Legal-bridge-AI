@@ -36,9 +36,10 @@ export default function RiskScoreBadge({ score, showLabel = true, size = 'md' })
 
 export function RiskScoreCircle({ score, size = 120 }) {
   const getRiskColor = (score) => {
-    if (score < 25) return '#10B981' // green
-    if (score < 50) return '#F59E0B' // yellow
-    if (score < 75) return '#F97316' // orange
+    if (score < 25) return '#ca5151' 
+    if (score < 50) return '#F59E0B'
+    if (score < 75) return '#f3c74e' 
+    if( score <= 100) return "#1bed10"
     return '#EF4444' // red
   }
 

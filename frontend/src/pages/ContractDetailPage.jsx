@@ -91,6 +91,13 @@ export default function ContractDetailPage() {
     setReportMenuOpen(false);
   };
 
+  // Refetch contract data when analysis is completed
+  useEffect(() => {
+    if (displayAnalysis?.status === "completed") {
+      queryClient.invalidateQueries(["contract", id]);
+    }
+  }, [displayAnalysis?.status, id, queryClient]);
+
   if (contractLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -157,8 +164,8 @@ export default function ContractDetailPage() {
   // console.log(displayAnalysis?.status);
   // console.log("uiStatus", uiStatus);
   // console.log("displayAnalysis", displayAnalysis);
-  console.log(displayAnalysis);
-  console.log(uiStatus);
+  console.log(displayContract);
+  // console.log("uiStatus", uiStatus);
 
   return (
     <div className="space-y-6">
@@ -248,12 +255,12 @@ export default function ContractDetailPage() {
                     >
                       PDF formatda
                     </button>
-                    <button
+                    {/* <button
                       onClick={() => handleGenerateReport("docx")}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
                       DOCX formatda
-                    </button>
+                    </button> */}
                   </div>
                 </div>
               </>
@@ -447,10 +454,21 @@ export default function ContractDetailPage() {
                     }
 
                     if (line.startsWith("Xavf darajasi")) {
+                      // Extract score number from string like: "Xavf darajasi: 78/100 - past (qonunga mos)"
+                      const match = line.match(/(\d+)\s*\/\s*100/);
+                      const score = match ? Number(match[1]) : null;
+
+                      const colorClass =
+                        score !== null && score >= 75
+                          ? "text-green-500"
+                          : score !== null && score >= 50
+                          ? "text-yellow-500"
+                          : "text-red-500";
+
                       return (
                         <p
                           key={index}
-                          className="text-sm font-semibold text-orange-700 mt-3"
+                          className={`text-base font-semibold mt-3 ${colorClass}`}
                         >
                           {line}
                         </p>
@@ -487,85 +505,87 @@ export default function ContractDetailPage() {
               </div>
 
               {/* Matn.uz Imlo Tekshiruvi */}
-              {displayContract.extracted_text && (
-                <div className="card">
-                  <div className="card-header flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <LanguageIcon className="h-5 w-5 text-purple-600" />
-                      <h3 className="text-lg font-medium text-gray-900">
-                        Imlo tekshiruvi (Matn.uz)
-                      </h3>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          if (displayContract.extracted_text) {
-                            navigator.clipboard.writeText(
-                              displayContract.extracted_text
-                            );
-                            setTextCopied(true);
-                            toast.success("Matn nusxalandi!");
-                            setTimeout(() => setTextCopied(false), 2000);
-                          }
-                        }}
-                        className="btn-secondary text-sm flex items-center gap-1"
-                        disabled={!displayContract.extracted_text}
-                      >
-                        <ClipboardDocumentIcon className="h-4 w-4" />
-                        {textCopied ? "Nusxalandi!" : "Matnni nusxalash"}
-                      </button>
-                      <a
-                        href="https://matn.uz"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn-secondary text-sm flex items-center gap-1"
-                      >
-                        <ArrowTopRightOnSquareIcon className="h-4 w-4" />
-                        Matn.uz ga o'tish
-                      </a>
-                    </div>
-                  </div>
-                  <div className="p-4">
-                    {showMatnUz && (
-                      <div className="border rounded-lg overflow-hidden">
-                        <div className="bg-purple-50 p-3 border-b flex items-center justify-between">
-                          <span className="text-sm text-purple-700 font-medium">
-                            📝 Matn.uz - O'zbek tili imlo tekshiruvchisi
-                          </span>
-                          <span className="text-xs text-purple-500">
-                            Matnni quyidagi maydonga joylang va "Tekshirish"
-                            tugmasini bosing
-                          </span>
-                        </div>
-                        <iframe
-                          src="https://matn.uz"
-                          className="w-full border-0"
-                          style={{ height: "600px" }}
-                          title="Matn.uz Imlo Tekshiruvi"
-                          sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
-                        />
+              {uiStatus === "completed" &&
+                displayAnalysis &&
+                displayContract.extracted_text && (
+                  <div className="card">
+                    <div className="card-header flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <LanguageIcon className="h-5 w-5 text-purple-600" />
+                        <h3 className="text-lg font-medium text-gray-900">
+                          Imlo tekshiruvi (Matn.uz)
+                        </h3>
                       </div>
-                    )}
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            if (displayContract.extracted_text) {
+                              navigator.clipboard.writeText(
+                                displayContract.extracted_text
+                              );
+                              setTextCopied(true);
+                              toast.success("Matn nusxalandi!");
+                              setTimeout(() => setTextCopied(false), 2000);
+                            }
+                          }}
+                          className="btn-secondary text-sm flex items-center gap-1"
+                          disabled={!displayContract.extracted_text}
+                        >
+                          <ClipboardDocumentIcon className="h-4 w-4" />
+                          {textCopied ? "Nusxalandi!" : "Matnni nusxalash"}
+                        </button>
+                        <a
+                          href="https://matn.uz"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn-secondary text-sm flex items-center gap-1"
+                        >
+                          <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+                          Matn.uz ga o'tish
+                        </a>
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      {showMatnUz && (
+                        <div className="border rounded-lg overflow-hidden">
+                          <div className="bg-purple-50 p-3 border-b flex items-center justify-between">
+                            <span className="text-sm text-purple-700 font-medium">
+                              📝 Matn.uz - O'zbek tili imlo tekshiruvchisi
+                            </span>
+                            <span className="text-xs text-purple-500">
+                              Matnni quyidagi maydonga joylang va "Tekshirish"
+                              tugmasini bosing
+                            </span>
+                          </div>
+                          <iframe
+                            src="https://matn.uz"
+                            className="w-full border-0"
+                            style={{ height: "600px" }}
+                            title="Matn.uz Imlo Tekshiruvi"
+                            sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+                          />
+                        </div>
+                      )}
 
-                    {!showMatnUz && displayContract.extracted_text && (
-                      <div className="bg-gray-50 rounded-lg p-4">
-                        <h4 className="text-sm font-medium text-gray-700 mb-2">
-                          Shartnoma matni:
-                        </h4>
-                        <div className="max-h-48 overflow-y-auto">
-                          <pre className="text-xs text-gray-600 whitespace-pre-wrap font-sans">
-                            {displayContract.extracted_text}
-                          </pre>
+                      {!showMatnUz && displayContract.extracted_text && (
+                        <div className="bg-gray-50 rounded-lg p-4">
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">
+                            Shartnoma matni:
+                          </h4>
+                          <div className="max-h-48 overflow-y-auto">
+                            <pre className="text-xs text-gray-600 whitespace-pre-wrap font-sans">
+                              {displayContract.extracted_text}
+                            </pre>
+                          </div>
+                          <p className="mt-3 text-xs text-green-500">
+                            💡 "Matnni nusxalash" tugmasini bosing va Matn.uz
+                            saytiga o'tib tekshiring
+                          </p>
                         </div>
-                        <p className="mt-3 text-xs text-green-500">
-                          💡 "Matnni nusxalash" tugmasini bosing va Matn.uz
-                          saytiga o'tib tekshiring
-                        </p>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </>
           )}
 
@@ -578,8 +598,8 @@ export default function ContractDetailPage() {
               </h3>
               <p className="mt-2 text-sm text-gray-500">
                 Shartnoma sun'iy intellekt yordamida tahlil qilinmoqda.
-                Yuklangan fayl hajmiga qarab tahlil jarayoni 1 soniyadan 5
-                daqiqagacha vaqt olishi mumkin.
+                Yuklangan fayl hajmiga qarab tahlil jarayoni o'rtacha 1
+                soniyadan 5 daqiqagacha vaqt oladi.
               </p>
             </div>
           )}

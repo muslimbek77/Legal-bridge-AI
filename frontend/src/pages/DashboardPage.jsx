@@ -123,17 +123,23 @@ export default function DashboardPage() {
   // console.log("displayStats", displayStats);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Bosh sahifa</h1>
+          <h1 className="text-3xl font-semibold text-gray-900">Bosh sahifa</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Shartnomalar tahlili umumiy ko'rinishi
+            Shartnomalar tahlili umumiy ko‘rinishi
           </p>
         </div>
-        <Link to="/contracts/upload" className="btn-primary">
-          <DocumentTextIcon className="h-5 w-5 mr-2" />
+        <Link
+          to="/contracts/upload"
+          className="inline-flex items-center gap-2 rounded-xl
+  bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white
+  shadow-md shadow-indigo-600/30
+  hover:bg-indigo-700 hover:shadow-lg transition"
+        >
+          <DocumentTextIcon className="h-5 w-5" />
           Yangi shartnoma
         </Link>
       </div>
@@ -185,7 +191,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Risk Distribution Pie Chart */}
-        <div className="card p-6">
+        <div className="card p-6 ">
           <h3 className="text-lg font-medium text-gray-900 mb-4">
             Risk Taqsimoti
           </h3>

@@ -40,9 +40,9 @@ export default function ContractUploadPage() {
   const uploadMutation = useMutation({
     mutationFn: (data) => contractsService.uploadContract(data),
     onSuccess: (response) => {
-      toast.success("Shartnoma muvaffaqiyatli yuklandi!");
+      toast.success("Shartnoma muvaffaqiyatli yuklandi!", { duration: 2000 });
       if (formData.auto_analyze) {
-        // toast.success("Tahlil boshlandi");
+        toast.success("Auto analiz qilish boshlandi");
       }
       navigate(`/contracts/${response.id}`);
     },
@@ -71,6 +71,7 @@ export default function ContractUploadPage() {
     data.append("title", formData.title);
     data.append("contract_type", formData.contract_type);
     data.append("language", formData.language);
+    data.append("auto_analyze", formData.auto_analyze);
     if (formData.description) {
       data.append("notes", formData.description);
     }
@@ -269,7 +270,7 @@ export default function ContractUploadPage() {
             </div>
 
             {/* Auto Analyze */}
-            {/* <div className="sm:col-span-2">
+            <div className="sm:col-span-2">
               <div className="flex items-center">
                 <input
                   type="checkbox"
@@ -289,7 +290,7 @@ export default function ContractUploadPage() {
               <p className="mt-1 text-xs text-gray-500">
                 Shartnoma yuklanganidan so'ng darhol tahlil boshlash
               </p>
-            </div> */}
+            </div>
           </div>
         </div>
 

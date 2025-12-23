@@ -44,8 +44,13 @@ export default function ContractsPage() {
       Promise.all(ids.map((id) => contractsService.deleteContract(id))),
     onSuccess: () => {
       setDeleteModalOpen(false);
+      setSelectedIds([]);
+
       toast.success("Shartnoma o'chirildi");
-      queryClient.invalidateQueries(["contracts"]);
+
+      queryClient.invalidateQueries({
+        queryKey: ["contracts"],
+      });
     },
     onError: () => {
       toast.error("Xatolik yuz berdi");
@@ -55,7 +60,9 @@ export default function ContractsPage() {
   const analyzeMutation = useMutation({
     mutationFn: contractsService.analyzeContract,
     onSuccess: () => {
-      queryClient.invalidateQueries(["contracts"]);
+      queryClient.invalidateQueries({
+        queryKey: ["contracts"],
+      });
       toast.success("Tahlil boshlandi");
     },
     onError: () => {
@@ -67,7 +74,7 @@ export default function ContractsPage() {
   const contractsList = data?.results || [];
   const hasContracts = contractsList.length > 0;
 
-  // console.log(contractsList);
+  console.log("contractsList", contractsList);
 
   const contractTypes = [
     { value: "", label: "Barcha turlar" },
@@ -105,12 +112,18 @@ export default function ContractsPage() {
     analyzeMutation.mutate(contractId);
   };
 
-  const getRiskScoreClass = (score) => {
-    if (score === null) return "";
-    if (score < 25) return "bg-green-100 text-green-800";
-    if (score < 50) return "bg-yellow-100 text-`yellow-800";
-    if (score < 75) return "bg-orange-100 text-orange-800";
-    return "bg-red-100 text-red-800";
+  const getRiskScoreStyles = (score) => {
+    if (score == null) return "";
+
+    if (score >= 75) {
+      return "text-emerald-700 border-emerald-300 hover:bg-emerald-400";
+    }
+
+    if (score >= 50) {
+      return "text-yellow-700 border-yellow-300 hover:bg-yellow-400";
+    }
+
+    return "text-red-700 border-red-300 hover:bg-red-400";
   };
 
   const toggleSelect = (id) => {
@@ -128,24 +141,48 @@ export default function ContractsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div
+      className="space-y-6 min-h-screen p-6
+                 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))]
+                  via-slate-50 to-white"
+    >
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div
+        className="flex items-center justify-between
+                   px-4 py-3 rounded-xl
+                   bg-white/40 backdrop-blur-xl
+                   border border-white/40
+                   shadow-sm"
+      >
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Shartnomalar</h1>
+          <h1 className="text-xl font-semibold text-gray-900 tracking-tight">
+            Shartnomalar
+          </h1>
           <p className="mt-1 text-sm text-gray-500">
             Barcha shartnomalarni boshqarish va tahlil qilish
           </p>
         </div>
 
-        <Link to="/contracts/upload" className="btn-primary">
+        <Link
+          to="/contracts/upload"
+          className="inline-flex items-center px-4 py-2 rounded-lg
+                     bg-indigo-600/90 text-white
+                     backdrop-blur-md
+                     shadow-md hover:shadow-lg
+                     transition"
+        >
           <PlusIcon className="h-5 w-5 mr-2" />
           Yangi shartnoma
         </Link>
       </div>
 
       {/* Filters */}
-      <div className="card p-4">
+      <div
+        className="p-4 rounded-2xl
+                   bg-white/40 backdrop-blur-xl
+                   border border-white/40
+                   shadow-md"
+      >
         <div className="flex flex-col sm:flex-row gap-4">
           {/* Search */}
           <div className="flex-1 relative">
@@ -155,7 +192,10 @@ export default function ContractsPage() {
               placeholder="Shartnoma qidirish..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="input-field pl-10"
+              className="w-full rounded-lg px-3 py-2
+                         bg-white/50 backdrop-blur-md
+                         border border-white/40
+                         focus:outline-none focus:ring-2 focus:ring-indigo-400/40 pl-10"
             />
           </div>
 
@@ -164,7 +204,10 @@ export default function ContractsPage() {
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="input-field"
+              className="w-full rounded-lg px-3 py-2
+                         bg-white/50 backdrop-blur-md
+                         border border-white/40
+                         focus:outline-none focus:ring-2 focus:ring-indigo-400/40"
             >
               {contractTypes.map((type) => (
                 <option key={type.value} value={type.value}>
@@ -179,7 +222,10 @@ export default function ContractsPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="input-field"
+              className="w-full rounded-lg px-3 py-2
+                         bg-white/50 backdrop-blur-md
+                         border border-white/40
+                         focus:outline-none focus:ring-2 focus:ring-indigo-400/40"
             >
               {statusOptions.map((status) => (
                 <option key={status.value} value={status.value}>
@@ -192,15 +238,22 @@ export default function ContractsPage() {
       </div>
 
       {/* Table */}
-      <div className="card overflow-hidden">
+      <div
+        className="relative overflow-hidden rounded-3xl
+                   bg-white/35 backdrop-blur-2xl
+                   border border-white/40
+                   shadow-2xl shadow-indigo-200/40"
+      >
         {selectedIds.length > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-b bg-red-50">
+          <div className="flex items-center justify-between px-4 py-3 border-b bg-white/50 backdrop-blur-xl border-white/30 rounded-t-3xl">
             <span className="text-sm text-gray-700">
               {selectedIds.length} ta shartnoma tanlandi
             </span>
             <button
               onClick={() => setDeleteModalOpen(true)}
-              className="btn-danger"
+              className="inline-flex items-center px-3 py-1.5 rounded-lg
+                         bg-red-500/80 text-white shadow-md
+                         hover:bg-red-600/90 transition"
             >
               Tanlanganlarni o‘chirish
             </button>
@@ -227,7 +280,7 @@ export default function ContractsPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-white/50 backdrop-blur-xl border-b border-white/30">
                 <tr>
                   <th className="px-4 text-left py-3">
                     <input
@@ -259,11 +312,15 @@ export default function ContractsPage() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white/40 backdrop-blur-xl divide-y divide-white/20">
                 {contractsList.map((contract) => (
                   <tr
                     key={contract.id}
-                    className="hover:bg-gray-50 cursor-pointer"
+                    className={`
+    group cursor-pointer transition-all duration-200
+    hover:bg-indigo-50/90
+    ${selectedIds.includes(contract.id) ? "bg-indigo-100/80" : ""}
+  `}
                     onClick={() => navigate(`/contracts/${contract.id}`)}
                   >
                     <td
@@ -274,13 +331,14 @@ export default function ContractsPage() {
                         type="checkbox"
                         checked={selectedIds.includes(contract.id)}
                         onChange={() => toggleSelect(contract.id)}
+                        className="accent-indigo-600 cursor-pointer"
                       />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <DocumentTextIcon className="h-8 w-8 text-gray-400" />
+                        <DocumentTextIcon className="h-8 w-8 text-indigo-500/60 drop-shadow-sm" />
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
+                          <div className="text-sm font-semibold text-gray-900 group-hover:text-indigo-700 transition">
                             {contract.title}
                           </div>
                           <div className="text-sm text-gray-500">
@@ -297,14 +355,19 @@ export default function ContractsPage() {
                       {contract.contract_type_display}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <ContractStatusBadge status={contract.status} />
+                      <div className="inline-flex items-center">
+                        <ContractStatusBadge status={contract.status} />
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {contract.risk_score !== null ? (
                         <span
-                          className={`px-3 py-1 rounded-full text-sm font-semibold ${getRiskScoreClass(
-                            contract.risk_score
-                          )}`}
+                          className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full
+                                      text-sm font-semibold backdrop-blur-md
+                                      border shadow-md hover:bg-emerald-300 hover:text-white transition-all duration-200 
+                                      ${getRiskScoreStyles(
+                                        contract.risk_score
+                                      )}`}
                         >
                           {contract.risk_score}
                         </span>
@@ -324,19 +387,30 @@ export default function ContractsPage() {
                               e.stopPropagation();
                               handleAnalyze(contract.id);
                             }}
-                            className="text-green-600 hover:text-green-900"
+                            className="p-2 rounded-full
+                                       bg-white/40 backdrop-blur-md
+                                       border border-white/40
+                                       shadow-sm
+                                       hover:bg-white/60 transition"
                             title="Tahlil qilish"
                             disabled={analyzeMutation.isPending}
                           >
                             <ArrowPathIcon className="h-5 w-5" />
                           </button>
                         )}
+
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDelete(contract);
                           }}
-                          className="text-red-600 hover:text-red-900"
+                          className="p-2 rounded-full cursor-pointer
+             bg-red-500/10 text-red-600
+             border border-transparent
+             group-hover:border-red-300/60
+             group-hover:bg-red-500/20
+             group-hover:scale-105
+             transition-all"
                           title="O'chirish"
                         >
                           <TrashIcon className="h-5 w-5" />
@@ -363,22 +437,28 @@ export default function ContractsPage() {
         onClose={() => setDeleteModalOpen(false)}
         title="Shartnomani o'chirish"
       >
-        <p className="text-sm text-gray-500">
-          {selectedIds.length > 1
-            ? `${selectedIds.length} ta shartnomani o‘chirmoqchimisiz? Bu amalni qaytarib bo‘lmaydi.`
-            : `Haqiqatan ham "${selectedContract?.title}" shartnomani o‘chirmoqchimisiz? Bu amalni qaytarib bo‘lmaydi.`}
-        </p>
-        <div className="mt-6 flex justify-end gap-3">
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={() => setDeleteModalOpen(false)}
-          >
-            Bekor qilish
-          </button>
-          <button type="button" className="btn-danger" onClick={confirmDelete}>
-            O'chirish
-          </button>
+        <div className="bg-white/60 backdrop-blur-2xl border border-white/40 p-0 sm:p-0 rounded-xl">
+          <p className="text-sm text-gray-500 p-6 pb-0">
+            {selectedIds.length > 1
+              ? `${selectedIds.length} ta shartnomani o‘chirmoqchimisiz? Bu amalni qaytarib bo‘lmaydi.`
+              : `Haqiqatan ham "${selectedContract?.title}" shartnomani o‘chirmoqchimisiz? Bu amalni qaytarib bo‘lmaydi.`}
+          </p>
+          <div className="mt-6 flex justify-end gap-3 p-6 pt-2">
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => setDeleteModalOpen(false)}
+            >
+              Bekor qilish
+            </button>
+            <button
+              type="button"
+              className="btn-danger"
+              onClick={confirmDelete}
+            >
+              O'chirish
+            </button>
+          </div>
         </div>
       </Modal>
     </div>
