@@ -31,11 +31,16 @@ class Command(BaseCommand):
         
         # Create contract
         with open(file_path, 'rb') as f:
+            filename = os.path.basename(file_path)
+            ext = os.path.splitext(filename)[1].lower().lstrip('.') or 'pdf'
+            size = os.path.getsize(file_path)
             contract = Contract.objects.create(
-                title=os.path.basename(file_path),
+                title=filename,
                 contract_type='other',
-                description='Test shartnoma',
-                original_file=File(f, name=os.path.basename(file_path))
+                original_file=File(f, name=filename),
+                original_filename=filename,
+                file_type=ext,
+                file_size=size,
             )
         
         self.stdout.write(self.style.SUCCESS(f'✓ Shartnoma yaratildi: {contract.id}'))

@@ -271,6 +271,31 @@ class ContractParser:
         """Normalize common OCR artifacts (hyphenation, apostrophes, spaces, EOLs)."""
         if not text:
             return text
+        # Harmonize mixed Latin/Cyrillic lookalike letters in Cyrillic-dominant texts
+        try:
+            total_letters = sum(1 for c in text if c.isalpha())
+            cyr_letters = sum(1 for c in text if 'А' <= c <= 'я' or c in 'ЁёЎўҒғҚқҲҳ')
+            cyr_ratio = (cyr_letters / total_letters) if total_letters else 0
+            if cyr_ratio >= 0.6:
+                # Map Latin lookalikes to Cyrillic to fix headers like "ШАРТНОМA" → "ШАРТНОМА"
+                latin_to_cyr = {
+                    'A': 'А', 'a': 'а',
+                    'B': 'В', 'b': 'в',
+                    'E': 'Е', 'e': 'е',
+                    'K': 'К', 'k': 'к',
+                    'M': 'М', 'm': 'м',
+                    'H': 'Н', 'h': 'н',
+                    'O': 'О', 'o': 'о',
+                    'P': 'Р', 'p': 'р',
+                    'C': 'С', 'c': 'с',
+                    'T': 'Т', 't': 'т',
+                    'X': 'Х', 'x': 'х',
+                    'Y': 'У', 'y': 'у',  # careful but helps for full-uppercase headings
+                }
+                text = ''.join(latin_to_cyr.get(ch, ch) for ch in text)
+        except Exception:
+            # If anything goes wrong, keep original text
+            pass
         # Join hyphenation broken at EOL: word-\nword -> wordword
         text = re.sub(r"(\w)-\n(\w)", r"\1\2", text)
         # Normalize apostrophes/backticks/quotes to a single apostrophe

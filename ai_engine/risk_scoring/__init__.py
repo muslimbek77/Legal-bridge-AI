@@ -224,13 +224,32 @@ class RiskScoringEngine:
             return 100
         
         found_types = {s.section_type for s in sections}
+        # Soft evidence: if keywords for a required section appear anywhere, treat as present for completeness
+        all_text = ' '.join(s.content.lower() for s in sections)
+        fallback_keywords = {
+            SectionType.SUBJECT: ['предмет', 'шартнома предмети', 'мавзу', 'мавзуси'],
+            SectionType.PRICE: ['цена договора', 'цена', 'стоимость работ', 'стоимость', 'оплата', 'порядок расчетов', 'расчетов', 'нарх', "to'lov", 'tulov', 'тўлов', 'сумма', 'узс', 'uzs', 'қиймати'],
+            SectionType.TERM: ['срок действия', 'срок договора', 'срок выполнения', 'сроки выполнения', 'срок исполнения', 'срок', 'муддат', 'амал қилади', 'действует'],
+            SectionType.LIABILITY: ['ответственность сторон', 'материальная ответственность', 'ответственность', 'javobgarlik', 'штраф', 'пеня', 'jarima'],
+            SectionType.DELIVERY: ['поставка', 'доставка', 'yetkazib', 'етказиб'],
+            SectionType.QUALITY: ['качество', 'сифат', 'sifat'],
+            SectionType.WARRANTY: ['гарант', 'kafolat', 'кафолат'],
+            SectionType.DISPUTE: ['спор', 'da’vo', 'nizo', 'низо'],
+            SectionType.REQUISITES: ['inn', 'stir', 'банк', 'bank', 'р/с', 'мфо', 'расчетный счет', 'hisob raqam'],
+        }
+        present_evidence = set()
+        for req in required_sections:
+            if req not in found_types:
+                kws = fallback_keywords.get(req, [])
+                if kws and any(kw in all_text for kw in kws):
+                    present_evidence.add(req)
         
         # Calculate weighted score
         total_weight = sum(self.SECTION_WEIGHTS.get(s, 5) for s in required_sections)
         found_weight = sum(
-            self.SECTION_WEIGHTS.get(s, 5) 
-            for s in required_sections 
-            if s in found_types
+            self.SECTION_WEIGHTS.get(s, 5)
+            for s in required_sections
+            if s in found_types or s in present_evidence
         )
         
         if total_weight == 0:
