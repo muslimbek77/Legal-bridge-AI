@@ -215,8 +215,8 @@ class ContractParser:
         ],
     }
     PARTY_PATTERNS = {
-        'party_a_name': [            # First line intro: "DORKOMPLEKTSNAB PLUS" МЧЖ номидан директор ... (кейинги ўринларда «Буюртмачи» деб юритилади)
-            r'“([A-Z][A-Z\s]+?)”\s+МЧЖ\s+номидан.*?буюртмачи',
+        'party_a_name': [
+            # Search in requisites section: Заказчик, then next Наименование line - from END of document backwards
             r"(?ims)(?:Заказчик|Покупатель).*?Наименование[:\s]+([^\n]+?)(?=\s*(?:Телефон|Факс|ИНН|ОКЭД|Адрес|$))",
             # Intro clause definitions: "Буюртмачи" деб юритиладиган "<name>"
             r"(?is)(?:кейинги|keyingi)\s+(?:уринларда|ўринларда|o['’`]?rinlarda)\s*[\"“”']?\s*буюртмачи\s*[\"“”']?\s+деб\s+юритилад(?:и|иг)ган\s*[\"“”']?([^\"”]{3,200})",
@@ -224,8 +224,8 @@ class ContractParser:
             r"(?im)(?:^|\n)\s*(?:Заказчик|Покупатель)\s*[:–—-]+\s*([^\n]+)",
             r"(?im)(?:^|\n)\s*(?:1[-\s]*tomon|birinchi\s+tomon|buyurtmachi|zakazchik|заказчик|Буюртмачи)\s*[:–—-]+\s*([^\n]+)",
         ],
-        'party_b_name': [            # First line intro: ва "EURO GLOBAL ASPHALT" МЧЖ номидан директор ... (кейинги ўринларда «Етказиб берувчи» деб юритилади)
-            r'ва\s+“([A-Z][A-Z\s]+?)”\s+МЧЖ\s+номидан.*?(?:етказиб\s+берувчи|ижрочи)',
+        'party_b_name': [
+            # Search in requisites section: Исполнитель, then next Наименование line - from END of document backwards
             r"(?ims)(?:Исполнитель|Поставщик).*?Наименование[:\s]+([^\n]+?)(?=\s*(?:Телефон|Факс|ИНН|ОКЭД|Адрес|$))",
             # Intro clause definitions: "Пудратчи/Ижрочи" деб юритиладиган "<name>"
             r"(?is)(?:кейинги|keyingi)\s+(?:уринларда|ўринларда|o['’`]?rinlarda)\s*[\"“”']?\s*(?:пудратчи|ижрочи|pudratchi|ijrochi)\s*[\"“”']?\s+деб\s+юритилад(?:и|иг)ган\s*[\"“”']?([^\"”]{3,200})",
@@ -513,9 +513,6 @@ class ContractParser:
                 anchor_match = m
 
         search_blocks = []
-        # First search in intro (first 3000 chars) for party names in contract opening
-        search_blocks.append(text[:3000])
-        logger.info(f"[PARTY_EXTRACT] Added intro block (first 3000 chars) to search")
         if anchor_match:
             search_blocks.append(text[anchor_match.start():])
             logger.info(f"[PARTY_EXTRACT] Found requisites anchor '{anchor_match.group(0)}', searching within it")
@@ -523,18 +520,13 @@ class ContractParser:
             logger.info(f"[PARTY_EXTRACT] No requisites section found, searching last 50k chars")
 
         search_blocks.append(text[-50000:])
-        logger.info(f"[PARTY_EXTRACT] Total search blocks: {len(search_blocks)}")
 
-        for block_idx, search_text in enumerate(search_blocks):
-            print(f"[DEBUG PARTY] Block {block_idx+1}/{len(search_blocks)}, length={len(search_text)}, field={field}")
-            logger.info(f"[PARTY_EXTRACT] Searching block {block_idx+1}/{len(search_blocks)} (length: {len(search_text)})")
-            for pattern_idx, pattern in enumerate(self.PARTY_PATTERNS.get(field, [])):
-                print(f"[DEBUG PARTY] Testing pattern {pattern_idx+1}: {repr(pattern[:60])}")
+        for search_text in search_blocks:
+            for pattern in self.PARTY_PATTERNS.get(field, []):
                 match = re.search(pattern, search_text)
                 if match:
-                    print(f"[DEBUG PARTY] MATCH FOUND: {match.group(1)[:50]}")
                     value = match.group(1).strip()
-                    logger.info(f"[PARTY_EXTRACT] {field} matched pattern {pattern_idx+1}, raw value: {value[:100]}")
+                    logger.info(f"[PARTY_EXTRACT] {field} matched pattern, raw value: {value[:100]}")
                     
                     # Stop at common delimiters that usually introduce requisites or amounts
                     value = re.split(r"\b(?:ИНН|INN|STIR|Адрес|Address|Телефон|Факс|ОКЭД|Банк|Р/С|р/с|МФО)\b", value)[0].strip()

@@ -680,10 +680,13 @@ class SpellingChecker:
                 
                 # 5. Check for mixed Latin/Cyrillic
                 if not error_found:
-                    mixed_error = self._check_mixed_script(word, line_num, position + word_pos, line, word_pos)
-                    if mixed_error:
-                        errors.append(mixed_error)
-                        error_found = True
+                    # Skip mixed-script check for short all-caps words in first 3 lines (likely title OCR artifacts)
+                    is_title_artifact = (line_num <= 3 and word.isupper() and len(word) <= 12)
+                    if not is_title_artifact:
+                        mixed_error = self._check_mixed_script(word, line_num, position + word_pos, line, word_pos)
+                        if mixed_error:
+                            errors.append(mixed_error)
+                            error_found = True
 
                 # 6. External backends (Hunspell/LanguageTool) for generic typos
                 if not error_found and self._should_external_check(word):
