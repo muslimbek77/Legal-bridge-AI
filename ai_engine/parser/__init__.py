@@ -185,6 +185,7 @@ class ContractParser:
     METADATA_PATTERNS = {
         'contract_number': [
             # First line header: "ШАРТНОМA No 10 (...)" or blank with number elsewhere
+            r"(?im)^[^\n]{0,80}ШАРТНОМАСИ\s+([0-9A-Za-z\-/]{1,20})",
             r"(?im)^\s*(?:ШАРТНОМA|ШАРТНОМА|SHARTNOMA|ДОГОВОР|CONTRACT)\s+(?:№|No|N)\.?\s*([\d\-/\А-Я]+)",
             # Generic patterns with raqami/номер keywords
             r"(?i)(?:shartnoma|договор|шартнома)\s*(?:raqami|номер|№|No|N|#)\s*([\d\А-Я\-/]+)",
@@ -212,6 +213,8 @@ class ContractParser:
             r"(\d{9})",  # Standalone 9-digit numbers (as fallback in requisites)
         ],
         'amount': [
+            # Numeric with three groups and optional decimals, tolerant to missing currency markers
+            r"(?i)(\d{1,3}(?:\s\d{3}){2}(?:[\.,]\d{2})?)\s*(?:\([^)]*\))?\s*(?:сумни|сум|сўм|uzs|usd|eur|rub|кк,?с|ққс)?",
             # Uzbek Cyrillic with detailed amount format
             r"(?i)(?:шартноманинг|шартнома\s+буйича\s+(?:ишлар\s+)?|ишлар\s+)?(?:умумий\s+)?(?:қиймати|киймати|нарх[и]?)\s*(?:таҳминий\s+)?(?:ққс\s+билан\s+)?([\d\s]{10,})",
             # Uzbek with units
