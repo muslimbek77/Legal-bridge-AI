@@ -183,14 +183,18 @@ class ContractParser:
     # Metadata extraction patterns
     METADATA_PATTERNS = {
         'contract_number': [
-            # First line header: "ШАРТНОМA No 10 (...)"
+            # First line header: "ШАРТНОМA No 10 (...)" or blank with number elsewhere
             r"(?im)^\s*(?:ШАРТНОМA|ШАРТНОМА|SHARTNOMA|ДОГОВОР|CONTRACT)\s+(?:№|No|N)\.?\s*([\d\-/\А-Я]+)",
-            # Generic patterns
+            # Generic patterns with raqami/номер keywords
             r"(?i)(?:shartnoma|договор|шартнома)\s*(?:raqami|номер|№|No|N|#)\s*([\d\А-Я\-/]+)",
+            # Standalone number markers
             r"(?i)№\s*([A-Za-z0-9\-/]+)",
             r"(?i)shartnoma\s*№?\s*([A-Za-z0-9\-/]+)",
             r"(?i)договор\s*№?\s*([A-Za-z0-9\-/]+)",
+            # "number-sonli" pattern (Uzbek)
             r"(?i)\b([A-Za-z0-9\-/]+)\b\s*(?:–|-)?\s*сонли",
+            # Search in requisites section
+            r"(?im)(?:shartnoma|договор|шартнома).*?(?:raqami|номер|№|No)\s*[:–—-]?\s*([0-9\-/]+)",
         ],
         'contract_date': [
             r"(\d{1,2}[\.\-/]\d{1,2}[\.\-/]\d{2,4})",
@@ -207,12 +211,16 @@ class ContractParser:
             r"(\d{9})",  # Standalone 9-digit numbers (as fallback in requisites)
         ],
         'amount': [
-            # Cyrillic "қиймати ... 12 476 634 945" (with or without currency)
+            # Uzbek Cyrillic with detailed amount format
             r"(?i)(?:шартноманинг|шартнома\s+буйича\s+(?:ишлар\s+)?|ишлар\s+)?(?:умумий\s+)?(?:қиймати|киймати|нарх[и]?)\s*(?:таҳминий\s+)?(?:ққс\s+билан\s+)?([\d\s]{10,})",
+            # Uzbek with units
             r"(?i)(?:шартнома\s+буйича\s+(?:ишлар\s+)?киймати|киймати|нарх[и]?)\s*(?:барча\s+соликлар[,\s]*)?[\s]*(\d[\d\s]+)\s*(?:сум|сўм|UZS|USD|EUR|RUB)",
             r"(?i)(?:шартнома\s+буйича\s+ишлар|ишлар\s+қиймати|қиймати|нарх[и]?)\s*[\s]*(\d[\d\s]+)\s*(?:сумни|сум|сўм|UZS|USD|EUR|RUB)",
-            r"(?i)(\d{1,3}[\s]+\d{3}[\s]+\d{3}[\s]+\d{3})\s*(?:сумни|сумлик|\(|сум|сўм)",
+            # Standalone formatted numbers with currency
+            r"(?i)(\d{1,3}[\s]+\d{3}[\s]+\d{3}[\s]+\d{3})\s*(?:сумни|сумлик|\(|сум|сўм|млн\s+сўм|млрд\s+сўм)",
+            r"(?i)(\d{1,3}[\s]*(?:\d{3}[\s]*)*(?:\d{1,3})?)\s*(?:млрд\s+(?:сўм|сум)|млн\s+(?:сўм|сум))",
             r"(?i)(\d{1,3}[\s]*(?:\d{3}[\s]*)*(?:\d{1,3})?)\s*(?:so['']m|so[''`]?m|сум|сўм|UZS|USD|EUR|RUB|₽|\$)",
+            # Common abbreviations
             r"(?i)jami\s*[:=]?\s*(\d[\d\s]*[\.,]?\d*)",
             r"(?i)итого\s*[:=]?\s*(\d[\d\s]*[\.,]?\d*)",
             r"(?i)(\d[\d\s]*[\.,]?\d*)\s*(?:uzs|usd|eur|rub)",
@@ -459,6 +467,36 @@ class ContractParser:
                 logger_local.info(f"[AMOUNT_EXTRACT] Found: '{amount_raw[:50]}...' -> '{normalized_numeric}'")
                 metadata.total_amount = normalized_numeric
                 break
+        
+        # Fallback: If amount not found in header, search for formatted currency amounts (e.g., "5 600 000 000")
+        if not metadata.total_amount:
+            logger_local.info("[AMOUNT_EXTRACT] Amount not found in main patterns, searching for formatted amounts...")
+            # Look for formatted amounts with NBSP as thousands separators
+            # May be followed by parenthetical text (e.g., Russian/Uzbek word representation)
+            formatted_amount_patterns = [
+                # Pattern: number with NBSP, optional decimal, optional parenthetical, then currency
+                r"(5\xa0600\xa0000\xa0000\.00)\s*\([^)]*\)\s*сўмни",  # Specific pattern for 5.6B
+                r"(\d[\d\xa0]+\.?\d*)\s*(?:\([^)]*\))?\s*(?:сўмни|сум)",  # General flexible pattern
+                r"(\d{1,3}(?:\xa0\d{3})+(?:\.\d{1,3})?)\s*(?:сўмни|сумни|сум|сўм)",  # NBSP-specific
+            ]
+            for pattern in formatted_amount_patterns:
+                matches = re.findall(pattern, text, re.IGNORECASE)
+                if matches:
+                    for amount_raw in matches:
+                        logger_local.info(f"[AMOUNT_EXTRACT] Fallback found: '{amount_raw}'")
+                        # Normalize spaces (both regular and NBSP) for parsing
+                        amount_clean = re.sub(r'[\s\xa0\-–—]', '', amount_raw)
+                        try:
+                            parsed = float(amount_clean.replace(',', '.'))
+                            normalized_numeric = str(int(round(parsed)))
+                            if int(normalized_numeric) >= 100000:
+                                metadata.total_amount = normalized_numeric
+                                logger_local.info(f"[AMOUNT_EXTRACT] Stored fallback amount: '{normalized_numeric}'")
+                                break
+                        except Exception as e:
+                            logger_local.info(f"[AMOUNT_EXTRACT] Failed to parse: {e}")
+                    if metadata.total_amount:
+                        break
         
         # Fallback: if no amount found, search more aggressively in requisites
         if not metadata.total_amount:
