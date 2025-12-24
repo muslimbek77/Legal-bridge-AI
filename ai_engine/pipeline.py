@@ -595,7 +595,14 @@ class ContractAnalysisPipeline:
             if self.config.use_llm and self.rag is not None and getattr(self.rag, 'llm_type', None):
                 llm_summary = self._generate_llm_summary(sections, metadata, issues, risk_score)
                 if llm_summary and isinstance(llm_summary, str) and len(llm_summary.strip()) > 0:
-                    return llm_summary
+                    # Append provenance note
+                    llm_name = getattr(self.rag, 'llm_type', 'llm')
+                    if llm_name == 'openai':
+                        llm_name = f"OpenAI ({getattr(self.rag, 'openai_model', '')})".strip()
+                    elif llm_name == 'ollama':
+                        llm_name = f"Ollama ({getattr(self.rag, 'llm_model', '')})".strip()
+                    provenance = f"\n\n(LLM xulosa manbasi: {llm_name})"
+                    return llm_summary + provenance
         except Exception as e:
             logger.warning(f"LLM summary generation failed, falling back: {e}")
 
@@ -676,6 +683,9 @@ class ContractAnalysisPipeline:
 
         if risk_score and risk_score.overall_score >= 70:
             summary_parts.append("\n💡 Shartnoma yaxshi tuzilgan. Kichik takomillashtirishlar bilan ishlatish mumkin.")
+
+        # Fallback provenance note
+        summary_parts.append("\n(LLM xulosa manbasi: Fallback qoida asosidagi xulosa — LLM ishlamadi yoki o‘chirib qo‘yilgan)")
 
         return "\n".join(summary_parts)
 

@@ -157,7 +157,7 @@ class RiskScoringEngine:
             missing_fields.append("party_b")
 
         # Extra penalty: missing sections are severe, missing fields moderate
-        compliance_penalty = len(missing_sections) * 8 + len(missing_fields) * 5
+        compliance_penalty = len(missing_sections) * 5 + len(missing_fields) * 4
         compliance_score = max(10, compliance_score - compliance_penalty)
         
         # Calculate overall score (weighted average)
@@ -175,9 +175,11 @@ class RiskScoringEngine:
             # Do not let overall score exceed "completeness + 10" for obviously partial uploads
             overall_score = min(overall_score, max(10, completeness_score + 10))
 
-        # If required sections are largely missing, force high risk (cap at 25)
-        if len(sections) < len(required_sections):
-            overall_score = min(overall_score, 25)
+        missing_count = len(missing_sections)
+        if missing_count >= 5:
+            overall_score = min(overall_score, 35)
+        elif missing_count >= 3:
+            overall_score = min(overall_score, 50)
 
         
         # Determine risk level
@@ -267,25 +269,24 @@ class RiskScoringEngine:
         
         found_types = {s.section_type for s in sections}
         present_evidence = set()
-        # Only allow keyword-based evidence if we already found most sections; otherwise stay strict
-        if len(sections) >= len(required_sections):
-            all_text = ' '.join(s.content.lower() for s in sections)
-            fallback_keywords = {
-                SectionType.SUBJECT: ['предмет', 'шартнома предмети', 'мавзу', 'мавзуси'],
-                SectionType.PRICE: ['цена договора', 'цена', 'стоимость работ', 'стоимость', 'оплата', 'порядок расчетов', 'расчетов', 'нарх', "to'lov", 'tulov', 'тўлов', 'сумма', 'узс', 'uzs', 'қиймати'],
-                SectionType.TERM: ['срок действия', 'срок договора', 'срок выполнения', 'сроки выполнения', 'срок исполнения', 'срок', 'муддат', 'амал қилади', 'действует'],
-                SectionType.LIABILITY: ['ответственность сторон', 'материальная ответственность', 'ответственность', 'javobgarlik', 'штраф', 'пеня', 'jarima'],
-                SectionType.DELIVERY: ['поставка', 'доставка', 'yetkazib', 'етказиб'],
-                SectionType.QUALITY: ['качество', 'сифат', 'sifat'],
-                SectionType.WARRANTY: ['гарант', 'kafolat', 'кафолат'],
-                SectionType.DISPUTE: ['спор', 'da’vo', 'nizo', 'низо'],
-                SectionType.REQUISITES: ['inn', 'stir', 'банк', 'bank', 'р/с', 'мфо', 'расчетный счет', 'hisob raqam'],
-            }
-            for req in required_sections:
-                if req not in found_types:
-                    kws = fallback_keywords.get(req, [])
-                    if kws and any(kw in all_text for kw in kws):
-                        present_evidence.add(req)
+        # Allow keyword fallback always (else genuine sections get missed)
+        all_text = ' '.join(s.content.lower() for s in sections)
+        fallback_keywords = {
+            SectionType.SUBJECT: ['предмет', 'шартнома предмети', 'мавзу', 'мавзуси'],
+            SectionType.PRICE: ['цена договора', 'цена', 'стоимость работ', 'стоимость', 'оплата', 'порядок расчетов', 'расчетов', 'нарх', "to'lov", 'tulov', 'тўлов', 'сумма', 'узс', 'uzs', 'қиймати'],
+            SectionType.TERM: ['срок действия', 'срок договора', 'срок выполнения', 'сроки выполнения', 'срок исполнения', 'срок', 'муддат', 'амал қилади', 'действует'],
+            SectionType.LIABILITY: ['ответственность сторон', 'материальная ответственность', 'ответственность', 'javobgarlik', 'штраф', 'пеня', 'jarima'],
+            SectionType.DELIVERY: ['поставка', 'доставка', 'yetkazib', 'етказиб'],
+            SectionType.QUALITY: ['качество', 'сифат', 'sifat'],
+            SectionType.WARRANTY: ['гарант', 'kafolat', 'кафолат'],
+            SectionType.DISPUTE: ['спор', 'da’vo', 'nizo', 'низо'],
+            SectionType.REQUISITES: ['inn', 'stir', 'банк', 'bank', 'р/с', 'мфо', 'расчетный счет', 'hisob raqam'],
+        }
+        for req in required_sections:
+            if req not in found_types:
+                kws = fallback_keywords.get(req, [])
+                if kws and any(kw in all_text for kw in kws):
+                    present_evidence.add(req)
         
         # Calculate weighted score
         total_weight = sum(self.SECTION_WEIGHTS.get(s, 5) for s in required_sections)
