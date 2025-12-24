@@ -229,21 +229,31 @@ class ContractParser:
     }
     PARTY_PATTERNS = {
         'party_a_name': [            # First line intro: "DORKOMPLEKTSNAB PLUS" МЧЖ номидан директор ... (кейинги ўринларда «Буюртмачи» деб юритилади)
+            # Explicit Uzbek label formats: 1-tomon (Buyurtmachi)
+            r"(?im)^\s*(?:1|I)[-\s]*tomon\s*\((?:buyurtmachi|Буюртмачи|zakazchik|Заказчик)\)\s*[:–—-]?\s*([^\n]+)",
+            # Same label but name on next line
+            r"(?im)^\s*(?:1|I)[-\s]*tomon.*?(?:buyurtmachi|Буюртмачи|zakazchik|Заказчик).*?\n\s*([^\n]{3,200})",
             r'“([A-Z][A-Z\s]+?)”\s+МЧЖ\s+номидан.*?буюртмачи',
             r"(?ims)(?:Заказчик|Покупатель).*?Наименование[:\s]+([^\n]+?)(?=\s*(?:Телефон|Факс|ИНН|ОКЭД|Адрес|$))",
             # Intro clause definitions: "Буюртмачи" деб юритиладиган "<name>"
             r"(?is)(?:кейинги|keyingi)\s+(?:уринларда|ўринларда|o['’`]?rinlarda)\s*[\"“”']?\s*буюртмачи\s*[\"“”']?\s+деб\s+юритилад(?:и|иг)ган\s*[\"“”']?([^\"”]{3,200})",
             # Line-anchored labels to avoid mid-sentence matches
             r"(?im)(?:^|\n)\s*(?:Заказчик|Покупатель)\s*[:–—-]+\s*([^\n]+)",
+            r"(?im)(?:^|\n)\s*(?:Buyurtmachi|Буюртмачи)\s*[:–—-]+\s*([^\n]+)",
             r"(?im)(?:^|\n)\s*(?:1[-\s]*tomon|birinchi\s+tomon|buyurtmachi|zakazchik|заказчик|Буюртмачи)\s*[:–—-]+\s*([^\n]+)",
         ],
         'party_b_name': [            # First line intro: ва "EURO GLOBAL ASPHALT" МЧЖ номидан директор ... (кейинги ўринларда «Етказиб берувчи» деб юритилади)
+            # Explicit Uzbek label formats: 2-tomon (Ijrochi/Pudratchi)
+            r"(?im)^\s*(?:2|II)[-\s]*tomon\s*\((?:ijrochi|Ижрочи|pudratchi|Пудратчи|podryadchik|Подрядчик|ispolnitel|Исполнитель)\)\s*[:–—-]?\s*([^\n]+)",
+            # Same label but name on next line
+            r"(?im)^\s*(?:2|II)[-\s]*tomon.*?(?:ijrochi|Ижрочи|pudratchi|Пудратчи|podryadchik|Подрядчик|ispolnitel|Исполнитель).*?\n\s*([^\n]{3,200})",
             r'ва\s+“([A-Z][A-Z\s]+?)”\s+МЧЖ\s+номидан.*?(?:етказиб\s+берувчи|ижрочи)',
             r"(?ims)(?:Исполнитель|Поставщик).*?Наименование[:\s]+([^\n]+?)(?=\s*(?:Телефон|Факс|ИНН|ОКЭД|Адрес|$))",
             # Intro clause definitions: "Пудратчи/Ижрочи" деб юритиладиган "<name>"
             r"(?is)(?:кейинги|keyingi)\s+(?:уринларда|ўринларда|o['’`]?rinlarda)\s*[\"“”']?\s*(?:пудратчи|ижрочи|pudratchi|ijrochi)\s*[\"“”']?\s+деб\s+юритилад(?:и|иг)ган\s*[\"“”']?([^\"”]{3,200})",
             # Line-anchored labels to avoid mid-sentence matches
             r"(?im)(?:^|\n)\s*(?:Исполнитель|Поставщик|Подрядчик)\s*[:–—-]+\s*([^\n]+)",
+            r"(?im)(?:^|\n)\s*(?:Ijrochi|Ижрочи|Pudratchi|Пудратчи|Etkazib\s+beruvchi|Етказиб\s+берувчи)\s*[:–—-]+\s*([^\n]+)",
             r"(?im)(?:^|\n)\s*(?:2[-\s]*tomon|ikkinchi\s+tomon|ijrochi|pudratchi|podryadchik|исполнитель|Пудратчи)\s*[:–—-]+\s*([^\n]+)",
         ],
     }
