@@ -28,7 +28,8 @@ class LegalRAG:
         llm_model: str = "llama3.1",
         llm_base_url: str = "http://localhost:11434",
         use_openai: bool = False,
-        openai_model: str = "gpt-3.5-turbo"
+        openai_model: str = "gpt-3.5-turbo",
+        collection_name: str = "legal_documents"
     ):
         """
         Initialize RAG system.
@@ -47,6 +48,8 @@ class LegalRAG:
         self.llm_base_url = llm_base_url
         self.use_openai = use_openai
         self.openai_model = openai_model
+        self.collection_name = os.environ.get("CHROMA_COLLECTION", collection_name)
+        self.tenant = os.environ.get("CHROMA_TENANT", "default_tenant")
         
         self.embeddings = None
         self.vectorstore = None
@@ -75,12 +78,27 @@ class LegalRAG:
             
             self.chroma_client = chromadb.PersistentClient(
                 path=str(self.vector_store_path),
-                settings=Settings(anonymized_telemetry=False)
+                settings=Settings(anonymized_telemetry=False),
+                tenant=self.tenant,
             )
-            
-            # Get or create collection
+
+            # Ensure default tenant/collection exists to avoid "Could not connect to tenant" errors
+            try:
+                self.chroma_client.get_or_create_collection(
+                    name=self.tenant,
+                    metadata={"hnsw:space": "cosine"},
+                )
+            except Exception as e:
+                logger.warning(f"Could not bootstrap tenant {self.tenant}: {e}")
+                # Attempt an explicit create as a fallback (Chroma >=0.5 requires it once)
+                self.chroma_client.create_collection(
+                    name=self.tenant,
+                    metadata={"hnsw:space": "cosine"},
+                )
+
+            # Get or create main collection
             self.collection = self.chroma_client.get_or_create_collection(
-                name="legal_documents",
+                name=self.collection_name,
                 metadata={"hnsw:space": "cosine"}
             )
             
