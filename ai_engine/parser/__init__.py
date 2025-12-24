@@ -88,9 +88,10 @@ class ContractParser:
         SectionType.SUBJECT: [
             r"(?i)(?:^|\n)\s*(?:(?:[\dIVX]+|[A-ZА-ЯЁЎҚҲҒ]{1,3})[\.\)]\s*)?(?:SHARTNOMA\s+PREDMETI|Shartnoma\s+mavzusi)",
             r"(?i)(?:^|\n)\s*(?:(?:[\dIVX]+|[A-ZА-ЯЁЎҚҲҒ]{1,3})[\.\)]\s*)?(?:PREDMET|MAVZU|SHARTNOMA\s+MAVZUSI)",
-            r"(?:^|\n)\s*(?:(?:[\dIVX]+|[A-ZА-ЯЁЎҚҲҒ]{1,3})[\.\)]\s*)?(?:ПРЕДМЕТ\s+ДОГОВОРА|ШАРТНОМА\s+ПРЕДМЕТИ)",
-            r"(?:^|\n)\s*(?:(?:[\dIVX]+|[A-ZА-ЯЁЎҚҲҒ]{1,3})[\.\)]\s*)?(?:ШАРТНОМА\s+МАВЗУСИ|МАВЗУ)",
+            r"(?i)(?:^|\n)\s*(?:(?:[\dIVX]+|[A-ZА-ЯЁЎҚҲҒ]{1,3})[\.\)]\s*)?(?:ПРЕДМЕТ\s+ДОГОВОРА|ШАРТНОМА\s+ПРЕДМЕТИ)",
+            r"(?i)(?:^|\n)\s*(?:(?:[\dIVX]+|[A-ZА-ЯЁЎҚҲҒ]{1,3})[\.\)]\s*)?(?:ШАРТНОМА\s+МАВЗУСИ|МАВЗУ)",
             r"(?i)(?:^|\n)\s*(?:Мавзуси)",
+            r"(?i)(?:^|\n)\s*(?:[\dIVX]+|[A-ZА-ЯЁЎҚҲҒ]{1,3})[\.\)]?\s*(?:\n\s*)?(?:ШАРТНОМА\s+ПРЕДМЕТИ|ШАРТНОМА\s+МАВЗУСИ)",
         ],
         SectionType.PARTIES: [
             r"(?i)(?:^|\n)\s*(?:(?:[\dIVX]+|[A-ZА-ЯЁЎҚҲҒ]{1,3})[\.\)]\s*)?(?:TOMONLAR|СТОРОНЫ|Taraflar)",
@@ -113,7 +114,8 @@ class ContractParser:
             r"(?i)(?:^|\n)\s*(?:(?:[\dIVX]+|[A-ZА-ЯЁЎҚҲҒ]{1,3})[\.\)]\s*)?(?:NARX\s+VA\s+TO['']LOV|QIYMAT|ISHLAR\s+QIYMATI)",
             r"(?:^|\n)\s*(?:(?:[\dIVX]+|[A-ZА-ЯЁЎҚҲҒ]{1,3})[\.\)]\s*)?(?:ЦЕНА\s+ДОГОВОРА|ЦЕНА\s+И\s+ПОРЯДОК\s+РАСЧЕТОВ|СТОИМОСТЬ)",
             r"(?:^|\n)\s*(?:(?:[\dIVX]+|[A-ZА-ЯЁЎҚҲҒ]{1,3})[\.\)]\s*)?(?:ПОРЯДОК\s+ОПЛАТЫ)",
-            r"(?:^|\n)\s*(?:(?:[\dIVX]+|[A-ZА-ЯЁЎҚҲҒ]{1,3})[\.\)]\s*)?(?:ШАРТНОМА\s+БЎЙИЧА\s+ИШЛАР\s+ҚИЙМАТИ|ИШЛАР\s+ҚИЙМАТИ|ШАРТНОМА\s+НАРХИ|НАРХ\s+ВА\s+ТЎЛОВ|ТЎЛОВ\s+ТАРТИБИ|ТЎЛОВЛАР\s+ВА\s+ҲИСОБ-КИТОБЛАР|СТОИМОСТЬ\s+РАБОТ|ШАРТНОМАНИНГ\s+БАҲОСИ\s+ВА\s+ҲИСОБ-КИТОБ\s+ТАРТИБИ)",
+            r"(?i)(?:^|\n)\s*(?:(?:[\dIVX]+|[A-ZА-ЯЁЎҚҲҒ]{1,3})[\.\)]\s*)?(?:ШАРТНОМА\s+БЎЙИЧА\s+ИШЛАР\s+ҚИЙМАТИ|ИШЛАР\s+ҚИЙМАТИ|ШАРТНОМА\s+НАРХИ|НАРХ\s+ВА\s+ТЎЛОВ|ТЎЛОВ\s+ТАРТИБИ|ТЎЛОВЛАР\s+ВА\s+ҲИСОБ-КИТОБЛАР|СТОИМОСТЬ\s+РАБОТ|ШАРТНОМАНИНГ\s+БАҲОСИ\s+ВА\s+ҲИСОБ-КИТОБ\s+ТАРТИБИ)",
+            r"(?i)(?:^|\n)\s*(?:[\dIVX]+|[A-ZА-ЯЁЎҚҲҒ]{1,3})[\.\)]?\s*(?:\n\s*)?(?:ШАРТНОМАНИНГ\s+БАҲОСИ\s+ВА\s+ҲИСОБ-КИТОБ\s+ТАРТИБИ)",
         ],
         SectionType.DELIVERY: [
             r"(?i)(?:^|\n)\s*(?:(?:[\dIVX]+|[A-ZА-ЯЁЎҚҲҒ]{1,3})[\.\)]\s*)?(?:YETKAZIB\s+BERISH|ПОСТАВКА|ДОСТАВКА)",
@@ -136,7 +138,8 @@ class ContractParser:
             r"(?i)(?:^|\n)\s*(?:(?:[\dIVX]+|[A-ZА-ЯЁЎҚҲҒ]{1,3})[\.\)]\s*)?(?:JAVOBGARLIK|ОТВЕТСТВЕННОСТЬ)",
             r"(?i)(?:^|\n)\s*(?:(?:[\dIVX]+|[A-ZА-ЯЁЎҚҲҒ]{1,3})[\.\)]\s*)?(?:MODDIY\s+JAVOBGARLIK|МАТЕРИАЛЬНАЯ\s+ОТВЕТСТВЕННОСТЬ)",
             r"(?i)(?:^|\n)\s*(?:(?:[\dIVX]+|[A-ZА-ЯЁЎҚҲҒ]{1,3})[\.\)]\s*)?(?:ЖАВОБГАРЛИК)",
-            r"(?i)(?:^|\n)\s*(?:(?:[\dIVX]+|[A-ZА-ЯЁЎҚҲҒ]{1,3})[\.\)]\s*)?(?:ОТВЕТСТВЕННОСТЬ\s+СТОРОН)",
+            r"(?i)(?:^|\n)\s*(?:(?:[\dIVX]+|[A-ZА-ЯЁЎҚҲҒ]{1,3})[\.\)]\s*)?(?:ОТВЕТСТВЕННОСТЬ\s+СТОРОН|ТОМОНЛАРНИНГ\s+ЖАВОБГАРЛИГИ)",
+            r"(?i)(?:^|\n)\s*(?:(?:[\dIVXХ]+|[A-ZА-ЯЁЎҚҲҒ]{1,3})[\.\)]\s*)?(?:МУЛКИЙ\s+ЖАВОБГАРЛИГИ|ТОМОНЛАРНИНГ\s+МУЛКИЙ\s+ЖАВОБГАРЛИГИ)",
         ],
         SectionType.FORCE_MAJEURE: [
             r"(?i)(?:^|\n)\s*(?:(?:[\dIVX]+|[A-ZА-ЯЁЎҚҲҒ]{1,3})[\.\)]\s*)?(?:FORS-MAJOR|ФОРС-МАЖОР|Favqulodda\s+holatlar)",
@@ -150,7 +153,8 @@ class ContractParser:
             r"(?i)(?:^|\n)\s*(?:(?:[\dIVX]+|[A-ZА-ЯЁЎҚҲҒ]{1,3})[\.\)]\s*)?(?:SHARTNOMA\s+MUDDATI|СРОК\s+ДЕЙСТВИЯ|СРОК\s+ДОГОВОРА)",
             r"(?i)(?:^|\n)\s*(?:(?:[\dIVX]+|[A-ZА-ЯЁЎҚҲҒ]{1,3})[\.\)]\s*)?(?:AMAL\s+QILISH\s+MUDDATI|MUDDATI)",
             r"(?i)(?:^|\n)\s*(?:(?:[\dIVX]+|[A-ZА-ЯЁЎҚҲҒ]{1,3})[\.\)]\s*)?(?:ШАРТНОМА\s+МУДДАТИ|АМАЛ\s+ҚИЛИШ\s+МУДДАТИ|ШАРТНОМАНИНГ\s+АМАЛ\s+ҚИЛИШИ|ИШЛАРНИ\s+БАЖАРИШ\s+МУДДАТЛАРИ|СРОКИ\s+ВЫПОЛНЕНИЯ\s+РАБОТ)",
-            r"(?i)(?:amal\s+qiladi|действует|срок)",
+            r"(?i)(?:ШАРТНОМАНИНГ\s+АМАЛ\s+КИЛИШ\s+МУДДАТИ|АМАЛ\s+КИЛИШ\s+МУДДАТИ)",
+            r"(?i)(?:amal\s+qiladi|действует|срок|amал\s+kili?sh\s+muddat[iy])",
         ],
         SectionType.TERMINATION: [
             r"(?i)(?:^|\n)\s*(?:(?:[\dIVX]+|[A-ZА-ЯЁЎҚҲҒ]{1,3})[\.\)]\s*)?(?:SHARTNOMANI\s+BEKOR\s+QILISH|РАСТОРЖЕНИЕ\s+ДОГОВОРА)",
@@ -948,16 +952,40 @@ class ContractParser:
                         match.group(0).strip()
                     ))
         
+        if positions:
+            # If multiple section types start at the same position, prefer more specific matches.
+            priority = {
+                SectionType.REQUISITES: 1,
+                SectionType.LIABILITY: 2,
+                SectionType.TERM: 3,
+                SectionType.PRICE: 4,
+                SectionType.SUBJECT: 5,
+                SectionType.PARTIES: 9,
+            }
+            filtered = {}
+            for start, end, stype, title in positions:
+                existing = filtered.get(start)
+                if not existing:
+                    filtered[start] = (start, end, stype, title)
+                else:
+                    current_priority = priority.get(stype, 50)
+                    existing_priority = priority.get(existing[2], 50)
+                    if current_priority < existing_priority:
+                        filtered[start] = (start, end, stype, title)
+            positions = list(filtered.values())
+
         # Sort by position
         positions.sort(key=lambda x: x[0])
-        
-        # Remove duplicates (same position, keep first)
+
+        # Remove exact duplicates (same start and type) but keep nearby distinct headings
         unique_positions = []
-        last_pos = -100
+        seen = set()
         for pos in positions:
-            if pos[0] - last_pos > 50:  # At least 50 chars apart
-                unique_positions.append(pos)
-                last_pos = pos[0]
+            key = (pos[0], pos[2])
+            if key in seen:
+                continue
+            seen.add(key)
+            unique_positions.append(pos)
         
         return unique_positions
     
