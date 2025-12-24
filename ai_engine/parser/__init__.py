@@ -438,6 +438,60 @@ class ContractParser:
         
         # Heuristic: derive party names near INN lines in requisites/signature blocks when explicit labels are missing
         try:
+            def _extract_blocks(req_text: str) -> List[Dict[str, Optional[str]]]:
+                blocks: List[Dict[str, Optional[str]]] = []
+                if not req_text:
+                    return blocks
+                # Define label patterns for two blocks
+                label_a = re.compile(r"(?ims)[“\«]\s*(?:Заказчик|Покупатель|Буюртмачи|Buyurtmachi|Пудратчи|ПУДРАТЧИ)\s*[”\»]")
+                label_b = re.compile(r"(?ims)[“\«]\s*(?:Исполнитель|Поставщик|Подрядчик|Ижрочи|Ijrochi|Етказиб\s+берувчи|Etkazib\s+beruvchi|Ёрдамчи\s+Пудратчи|ЁРДАМЧИ\s+ПУДРАТЧИ)\s*[”\»]")
+                # Find all label occurrences with type
+                labels = []
+                for m in label_a.finditer(req_text):
+                    labels.append(('A', m.start()))
+                for m in label_b.finditer(req_text):
+                    labels.append(('B', m.start()))
+                if not labels:
+                    return blocks
+                labels.sort(key=lambda x: x[1])
+                # Find ordered org names with markers across requisites
+                names = [nm.group(1).strip() for nm in re.finditer(r"[“\«]([^”\»\n]{3,200})[”\»]\s+(?:МЧЖ|АЖ|ООО|АО|AJ)", req_text)]
+                # Pair names to labels by order
+                count = min(len(labels), len(names))
+                for i in range(count):
+                    typ, pos = labels[i]
+                    name_val = names[i]
+                    # Extract nearest INN after label position within 800 chars
+                    seg = req_text[pos:pos+800]
+                    im = re.search(r"(?i)(?:ИНН|INN|STIR)[\s:–-]*(\d[\s–-]*\d[\s–-]*\d[\s–-]*\d[\s–-]*\d[\s–-]*\d[\s–-]*\d[\s–-]*\d[\s–-]*\d)", seg)
+                    inn_val = None
+                    if im:
+                        inn_raw = im.group(1)
+                        inn_norm = re.sub(r"[\s–-]", "", inn_raw)
+                        if len(inn_norm) == 9 and inn_norm.isdigit():
+                            inn_val = inn_norm
+                    blocks.append({'type': typ, 'name': name_val, 'inn': inn_val})
+                return blocks
+            def _pair_names_with_inns(req_text: str) -> List[Tuple[str, str]]:
+                pairs: List[Tuple[str, str]] = []
+                if not req_text:
+                    return pairs
+                org_markers = r"(?:МЧЖ|АЖ|ООО|АО|ЗАО|ОАО|AJ)"
+                # Find quoted org names and try to associate with the nearest subsequent INN
+                for nm in re.finditer(rf"[“\«]([^”\»\n]{{3,200}})[”\»]\s+{org_markers}", req_text):
+                    name = nm.group(1).strip()
+                    # Look ahead 500 chars for an INN label and digits
+                    look_start = nm.end()
+                    look_end = min(len(req_text), look_start + 500)
+                    look = req_text[look_start:look_end]
+                    inn_m = re.search(r"(?i)(?:ИНН|INN|STIR)[\s:–-]*(\d[\s–-]*\d[\s–-]*\d[\s–-]*\d[\s–-]*\d[\s–-]*\d[\s–-]*\d[\s–-]*\d[\s–-]*\d)", look)
+                    if inn_m:
+                        inn_raw = inn_m.group(1)
+                        inn_norm = re.sub(r"[\s–-]", "", inn_raw)
+                        if len(inn_norm) == 9 and inn_norm.isdigit():
+                            pairs.append((name, inn_norm))
+                return pairs
+
             def _find_name_near_inn(full_text: str, inn_numeric: str, label_regex: Optional[str] = None) -> Optional[str]:
                 # Build a permissive pattern that matches the INN digits with optional spaces/dashes
                 inn_pat = ''.join([f"{d}[\\s–-]*" for d in inn_numeric])
@@ -452,16 +506,27 @@ class ContractParser:
                 org_markers = r"(?:МЧЖ|АЖ|ООО|АО|ЗАО|ОАО|ИП|ЧП|СП|AJ|МЖ)"
                 candidates_before: List[Tuple[int, str]] = []  # (distance, name)
                 candidates_after: List[Tuple[int, str]] = []   # (distance, name)
-                # Label-anchored capture: e.g., Заказчик/Исполнитель → Наименование: <name>
+                label_candidates_before: List[Tuple[int, str]] = []
+                label_candidates_after: List[Tuple[int, str]] = []
+                # Label-anchored capture: e.g., Заказчик/Исполнитель/Пудратчи → Наименование: <name>
                 if label_regex:
                     for lm in re.finditer(rf"(?ims)(?:^|\n)\s*(?:{label_regex}).{{0,250}}?Наименование[:\s]+(?!\s*(?:товаров?|услуг[аи]?))([^\n]+)", window):
                         name = lm.group(1).strip().strip('“”«»')
                         pos = start + lm.start()
                         dist = abs(m.start() - pos)
                         if pos <= m.start():
-                            candidates_before.append((dist, name))
+                            label_candidates_before.append((dist, name))
                         else:
-                            candidates_after.append((dist, name))
+                            label_candidates_after.append((dist, name))
+                    # Also capture quoted names with org markers under label blocks
+                    for qm in re.finditer(rf"(?ims)(?:^|\n)\s*(?:{label_regex}).{{0,500}}?[“\«]([^”\»\n]{{3,200}})[”\»]\s+(?:МЧЖ|АЖ|ООО|АО|AJ)", window):
+                        name = qm.group(1).strip()
+                        pos = start + qm.start()
+                        dist = abs(m.start() - pos)
+                        if pos <= m.start():
+                            label_candidates_before.append((dist, name))
+                        else:
+                            label_candidates_after.append((dist, name))
                 # Generic capture: any 'Наименование: <name>' in proximity
                 for nm in re.finditer(r"(?im)(?:^|\n)\s*Наименование[:\s]+(?!\s*(?:товаров?|услуг[аи]?))([^\n]+)", window):
                     name = nm.group(1).strip().strip('“”«»')
@@ -490,8 +555,14 @@ class ContractParser:
                         candidates_before.append((dist, name))
                     else:
                         candidates_after.append((dist, name))
-                # Prefer the closest preceding candidate; if none, take the closest following
-                if candidates_before or candidates_after:
+                # Prefer label-derived candidates first
+                if label_candidates_before or label_candidates_after:
+                    label_candidates_before.sort(key=lambda x: x[0])
+                    label_candidates_after.sort(key=lambda x: x[0])
+                    best_before = label_candidates_before[0] if label_candidates_before else (10**9, '')
+                    best_after = label_candidates_after[0] if label_candidates_after else (10**9, '')
+                else:
+                    # Fall back to generic candidates
                     candidates_before.sort(key=lambda x: x[0])
                     candidates_after.sort(key=lambda x: x[0])
                     best_before = candidates_before[0] if candidates_before else (10**9, '')
@@ -517,13 +588,51 @@ class ContractParser:
 
             # Choose a robust search area: requisites_text if present, else tail of the document
             search_area = requisites_text or text[-8000:]
+            # Try block-based extraction for ordered mapping
+            try:
+                blocks = _extract_blocks(search_area)
+                if blocks:
+                    # Assign names by matching INNs where possible, else by order
+                    for b in blocks:
+                        if b.get('inn') and b.get('name'):
+                            if metadata.party_a_inn == b['inn'] and not metadata.party_a_name:
+                                metadata.party_a_name = b['name']
+                            if metadata.party_b_inn == b['inn'] and not metadata.party_b_name:
+                                metadata.party_b_name = b['name']
+                    # Fallback by order if still missing
+                    names_ordered = [b['name'] for b in blocks if b.get('name')]
+                    if names_ordered:
+                        if not metadata.party_a_name and len(names_ordered) >= 1:
+                            metadata.party_a_name = names_ordered[0]
+                        if not metadata.party_b_name and len(names_ordered) >= 2:
+                            metadata.party_b_name = names_ordered[1]
+                    # If both names ended up identical but blocks yielded two distinct names, override by order
+                    if (metadata.party_a_name and metadata.party_b_name and metadata.party_a_name == metadata.party_b_name) and len(names_ordered) >= 2:
+                        a_name_new, b_name_new = names_ordered[0], names_ordered[1]
+                        if a_name_new and b_name_new and a_name_new != b_name_new:
+                            logger_local.info(f"[PARTY_BLOCK_OVERRIDE] Overriding identical names → A='{a_name_new}', B='{b_name_new}'")
+                            metadata.party_a_name = a_name_new
+                            metadata.party_b_name = b_name_new
+            except Exception:
+                pass
+            # First, try pairing names with INNs directly from requisites
+            try:
+                pairs = _pair_names_with_inns(search_area)
+                if pairs:
+                    for n, i in pairs:
+                        if metadata.party_a_inn == i:
+                            metadata.party_a_name = metadata.party_a_name or n
+                        if metadata.party_b_inn == i:
+                            metadata.party_b_name = metadata.party_b_name or n
+            except Exception:
+                pass
             if metadata.party_a_inn and not metadata.party_a_name:
-                name_a = _find_name_near_inn(search_area, metadata.party_a_inn, label_regex=r"Заказчик|Покупатель|Буюртмачи|Buyurtmachi")
+                name_a = _find_name_near_inn(search_area, metadata.party_a_inn, label_regex=r"Заказчик|Покупатель|Буюртмачи|Buyurtmachi|Пудратчи|ПУДРАТЧИ")
                 if name_a:
                     logger_local.info(f"[PARTY_NEAR_INN] party_a_name inferred: {name_a[:120]}")
                     metadata.party_a_name = name_a
             if metadata.party_b_inn and not metadata.party_b_name:
-                name_b = _find_name_near_inn(search_area, metadata.party_b_inn, label_regex=r"Исполнитель|Поставщик|Подрядчик|Ижрочи|Ijrochi|Етказиб\s+берувчи|Etkazib\s+beruvchi")
+                name_b = _find_name_near_inn(search_area, metadata.party_b_inn, label_regex=r"Исполнитель|Поставщик|Подрядчик|Ижрочи|Ijrochi|Етказиб\s+берувчи|Etkazib\s+beruvchi|Ёрдамчи\s+Пудратчи|ЁРДАМЧИ\s+ПУДРАТЧИ")
                 if name_b:
                     logger_local.info(f"[PARTY_NEAR_INN] party_b_name inferred: {name_b[:120]}")
                     metadata.party_b_name = name_b
