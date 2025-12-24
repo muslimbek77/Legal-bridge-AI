@@ -433,6 +433,91 @@ class ContractParser:
         if len(unique_inns) >= 2:
             metadata.party_b_inn = unique_inns[1]
         
+        # Heuristic: derive party names near INN lines in requisites/signature blocks when explicit labels are missing
+        try:
+            def _find_name_near_inn(full_text: str, inn_numeric: str) -> Optional[str]:
+                # Build a permissive pattern that matches the INN digits with optional spaces/dashes
+                inn_pat = ''.join([f"{d}[\\s–-]*" for d in inn_numeric])
+                m = re.search(inn_pat, full_text)
+                if not m:
+                    return None
+                # Take a window before the INN occurrence to search for organization names
+                start = max(0, m.start() - 1500)
+                end = min(len(full_text), m.end() + 600)
+                window = full_text[start:end]
+                # Common org type markers (Uz/Ru)
+                org_markers = r"(?:МЧЖ|АЖ|ООО|АО|AJ|МЖ)"
+                candidates_before: List[Tuple[int, str]] = []  # (distance, name)
+                candidates_after: List[Tuple[int, str]] = []   # (distance, name)
+                # Prefer quoted names followed by org marker: “NAME” МЧЖ / «NAME» АЖ
+                for qm in re.finditer(rf"[“\«]([^”\»\n]{{3,200}})[”\»]\s+{org_markers}", window, re.IGNORECASE):
+                    name = qm.group(1).strip()
+                    # Position of match relative to full_text
+                    pos = start + qm.start()
+                    dist = abs(m.start() - pos)
+                    if pos <= m.start():
+                        candidates_before.append((dist, name))
+                    else:
+                        candidates_after.append((dist, name))
+                # Fallback: unquoted line with org marker
+                for um in re.finditer(rf"(?im)^\s*([A-Za-z0-9А-ЯЁЎҚҲҒҒҲЇІЄӢӮЁёЎўҒғҚқҲҳ\-\.'\s]{{3,200}})\s+{org_markers}.*$", window):
+                    name = um.group(1).strip()
+                    pos = start + um.start()
+                    dist = abs(m.start() - pos)
+                    if pos <= m.start():
+                        candidates_before.append((dist, name))
+                    else:
+                        candidates_after.append((dist, name))
+                # Prefer the closest preceding candidate; if none, take the closest following
+                if candidates_before:
+                    candidates_before.sort(key=lambda x: x[0])
+                    return candidates_before[0][1]
+                if candidates_after:
+                    candidates_after.sort(key=lambda x: x[0])
+                    return candidates_after[0][1]
+                # Another fallback: header-like single line before INN
+                lines = window.split("\n")
+                for idx in range(len(lines)-1, -1, -1):
+                    ln = lines[idx]
+                    ln_stripped = ln.strip()
+                    if len(ln_stripped) >= 3 and any(k in ln_stripped for k in ["МЧЖ", "АЖ", "ООО", "АО"]):
+                        # Attempt to take name portion before marker
+                        name = re.split(r"\s+(?:МЧЖ|АЖ|ООО|АО)\b", ln_stripped)[0].strip('“”«» \t')
+                        if name:
+                            return name
+                return None
+
+            # Choose a robust search area: requisites_text if present, else tail of the document
+            search_area = requisites_text or text[-8000:]
+            if metadata.party_a_inn and not metadata.party_a_name:
+                name_a = _find_name_near_inn(search_area, metadata.party_a_inn)
+                if name_a:
+                    logger_local.info(f"[PARTY_NEAR_INN] party_a_name inferred: {name_a[:120]}")
+                    metadata.party_a_name = name_a
+            if metadata.party_b_inn and not metadata.party_b_name:
+                name_b = _find_name_near_inn(search_area, metadata.party_b_inn)
+                if name_b:
+                    logger_local.info(f"[PARTY_NEAR_INN] party_b_name inferred: {name_b[:120]}")
+                    metadata.party_b_name = name_b
+            # If still missing, try capturing organization names by markers in requisites area
+            if (not metadata.party_a_name or not metadata.party_b_name):
+                org_pairs = re.findall(r"[“\«]([^”\»\n]{3,200})[”\»]\s+(МЧЖ|АЖ|ООО|АО)", search_area, re.IGNORECASE)
+                if org_pairs:
+                    org_names = [n.strip() for n, _ in org_pairs]
+                    # Deduplicate while preserving order
+                    seen_n = set(); ordered = []
+                    for n in org_names:
+                        if n and n not in seen_n:
+                            seen_n.add(n); ordered.append(n)
+                    if not metadata.party_a_name and len(ordered) >= 1:
+                        metadata.party_a_name = ordered[0]
+                        logger_local.info(f"[PARTY_MARKERS] party_a_name from markers: {ordered[0][:120]}")
+                    if not metadata.party_b_name and len(ordered) >= 2:
+                        metadata.party_b_name = ordered[1]
+                        logger_local.info(f"[PARTY_MARKERS] party_b_name from markers: {ordered[1][:120]}")
+        except Exception as e:
+            logger_local.info(f"[PARTY_NEAR_INN] Heuristic failed: {e}")
+        
         # Extract amount
         for pattern in self.METADATA_PATTERNS['amount']:
             match = re.search(pattern, text)
@@ -541,8 +626,10 @@ class ContractParser:
         # Detect language
         metadata.language = self._detect_language(text)
         
-        metadata.party_a_name = self._extract_party(text, 'party_a_name')
-        metadata.party_b_name = self._extract_party(text, 'party_b_name')
+        if not metadata.party_a_name:
+            metadata.party_a_name = self._extract_party(text, 'party_a_name')
+        if not metadata.party_b_name:
+            metadata.party_b_name = self._extract_party(text, 'party_b_name')
 
         return metadata
 
