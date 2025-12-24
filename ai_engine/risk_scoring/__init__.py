@@ -135,6 +135,30 @@ class RiskScoringEngine:
         balance_score = self._calculate_balance_score(issues, clause_analyses)
         ambiguity_score = self._calculate_ambiguity_score(sections)
         specificity_score = self._calculate_specificity_score(sections)
+
+        # Missing required sections and critical metadata penalize compliance further
+        from ai_engine.compliance import LegalComplianceEngine
+        required_sections = LegalComplianceEngine.REQUIRED_SECTIONS.get(
+            contract_type,
+            LegalComplianceEngine.REQUIRED_SECTIONS.get("service", [])
+        )
+        found_types = {s.section_type for s in sections}
+        missing_sections = [req for req in required_sections if req not in found_types]
+        missing_fields = []
+        if not metadata.contract_number:
+            missing_fields.append("contract_number")
+        if not metadata.contract_date:
+            missing_fields.append("contract_date")
+        if not metadata.total_amount:
+            missing_fields.append("total_amount")
+        if not (metadata.party_a_name or metadata.party_a_inn):
+            missing_fields.append("party_a")
+        if not (metadata.party_b_name or metadata.party_b_inn):
+            missing_fields.append("party_b")
+
+        # Extra penalty: missing sections are severe, missing fields moderate
+        compliance_penalty = len(missing_sections) * 8 + len(missing_fields) * 5
+        compliance_score = max(10, compliance_score - compliance_penalty)
         
         # Calculate overall score (weighted average)
         overall_score = self._calculate_overall_score(
@@ -145,6 +169,16 @@ class RiskScoringEngine:
             ambiguity_score,
             specificity_score,
         )
+
+        # Hard cap when document is clearly incomplete (few sections or low completeness)
+        if len(sections) < 5 or completeness_score < 50:
+            # Do not let overall score exceed "completeness + 10" for obviously partial uploads
+            overall_score = min(overall_score, max(10, completeness_score + 10))
+
+        # If required sections are largely missing, force high risk (cap at 25)
+        if len(sections) < len(required_sections):
+            overall_score = min(overall_score, 25)
+
         
         # Determine risk level
         risk_level = self._determine_risk_level(overall_score)
@@ -232,25 +266,26 @@ class RiskScoringEngine:
             return 100
         
         found_types = {s.section_type for s in sections}
-        # Soft evidence: if keywords for a required section appear anywhere, treat as present for completeness
-        all_text = ' '.join(s.content.lower() for s in sections)
-        fallback_keywords = {
-            SectionType.SUBJECT: ['предмет', 'шартнома предмети', 'мавзу', 'мавзуси'],
-            SectionType.PRICE: ['цена договора', 'цена', 'стоимость работ', 'стоимость', 'оплата', 'порядок расчетов', 'расчетов', 'нарх', "to'lov", 'tulov', 'тўлов', 'сумма', 'узс', 'uzs', 'қиймати'],
-            SectionType.TERM: ['срок действия', 'срок договора', 'срок выполнения', 'сроки выполнения', 'срок исполнения', 'срок', 'муддат', 'амал қилади', 'действует'],
-            SectionType.LIABILITY: ['ответственность сторон', 'материальная ответственность', 'ответственность', 'javobgarlik', 'штраф', 'пеня', 'jarima'],
-            SectionType.DELIVERY: ['поставка', 'доставка', 'yetkazib', 'етказиб'],
-            SectionType.QUALITY: ['качество', 'сифат', 'sifat'],
-            SectionType.WARRANTY: ['гарант', 'kafolat', 'кафолат'],
-            SectionType.DISPUTE: ['спор', 'da’vo', 'nizo', 'низо'],
-            SectionType.REQUISITES: ['inn', 'stir', 'банк', 'bank', 'р/с', 'мфо', 'расчетный счет', 'hisob raqam'],
-        }
         present_evidence = set()
-        for req in required_sections:
-            if req not in found_types:
-                kws = fallback_keywords.get(req, [])
-                if kws and any(kw in all_text for kw in kws):
-                    present_evidence.add(req)
+        # Only allow keyword-based evidence if we already found most sections; otherwise stay strict
+        if len(sections) >= len(required_sections):
+            all_text = ' '.join(s.content.lower() for s in sections)
+            fallback_keywords = {
+                SectionType.SUBJECT: ['предмет', 'шартнома предмети', 'мавзу', 'мавзуси'],
+                SectionType.PRICE: ['цена договора', 'цена', 'стоимость работ', 'стоимость', 'оплата', 'порядок расчетов', 'расчетов', 'нарх', "to'lov", 'tulov', 'тўлов', 'сумма', 'узс', 'uzs', 'қиймати'],
+                SectionType.TERM: ['срок действия', 'срок договора', 'срок выполнения', 'сроки выполнения', 'срок исполнения', 'срок', 'муддат', 'амал қилади', 'действует'],
+                SectionType.LIABILITY: ['ответственность сторон', 'материальная ответственность', 'ответственность', 'javobgarlik', 'штраф', 'пеня', 'jarima'],
+                SectionType.DELIVERY: ['поставка', 'доставка', 'yetkazib', 'етказиб'],
+                SectionType.QUALITY: ['качество', 'сифат', 'sifat'],
+                SectionType.WARRANTY: ['гарант', 'kafolat', 'кафолат'],
+                SectionType.DISPUTE: ['спор', 'da’vo', 'nizo', 'низо'],
+                SectionType.REQUISITES: ['inn', 'stir', 'банк', 'bank', 'р/с', 'мфо', 'расчетный счет', 'hisob raqam'],
+            }
+            for req in required_sections:
+                if req not in found_types:
+                    kws = fallback_keywords.get(req, [])
+                    if kws and any(kw in all_text for kw in kws):
+                        present_evidence.add(req)
         
         # Calculate weighted score
         total_weight = sum(self.SECTION_WEIGHTS.get(s, 5) for s in required_sections)
@@ -317,7 +352,6 @@ class RiskScoringEngine:
             if issue.issue_type == IssueType.ONE_SIDED
         )
         score -= one_sided_count * 15
-        
         # LLM natijalari: "bir tomonli", "asymmetric", "unfair" xavflar uchun chegirma
         if clause_analyses:
             for analysis in clause_analyses.values():

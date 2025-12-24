@@ -612,6 +612,33 @@ class ContractAnalysisPipeline:
 
         summary_parts.append(f"\n🔍 Tahlil qilingan bo'limlar: {len(sections)}")
 
+        # Highlight missing essentials
+        try:
+            from ai_engine.compliance import LegalComplianceEngine, get_section_name
+            required_sections = LegalComplianceEngine.REQUIRED_SECTIONS.get(
+                getattr(risk_score, 'contract_type', ''),
+                LegalComplianceEngine.REQUIRED_SECTIONS.get("service", [])
+            ) if risk_score else []
+            found_types = {s.section_type for s in sections}
+            missing_sections = [get_section_name(sec.value, metadata.language) for sec in required_sections if sec not in found_types]
+            missing_fields = []
+            if not metadata.contract_number:
+                missing_fields.append("shartnoma raqami")
+            if not metadata.contract_date:
+                missing_fields.append("sana")
+            if not metadata.total_amount:
+                missing_fields.append("summasi")
+            if not (metadata.party_a_name or metadata.party_a_inn):
+                missing_fields.append("1-tomon ma'lumotlari")
+            if not (metadata.party_b_name or metadata.party_b_inn):
+                missing_fields.append("2-tomon ma'lumotlari")
+            if missing_sections:
+                summary_parts.append(f"🚩 Yetishmayotgan bo'limlar: {', '.join(missing_sections)}")
+            if missing_fields:
+                summary_parts.append(f"🚩 Yetishmayotgan muhim ma'lumotlar: {', '.join(missing_fields)}")
+        except Exception:
+            pass
+
         if risk_score:
             score = risk_score.overall_score
             if score >= 80:
