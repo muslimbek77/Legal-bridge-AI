@@ -589,77 +589,155 @@ class ContractAnalysisPipeline:
         issues: List[ComplianceIssue],
         risk_score: Optional[RiskScore]
     ) -> str:
-        """Generate human-readable analysis summary."""
+        """Generate human-readable analysis summary (LLM-backed if available)."""
+        # Prefer LLM summary when enabled and RAG/OpenAI is available
+        try:
+            if self.config.use_llm and self.rag is not None and getattr(self.rag, 'llm_type', None):
+                llm_summary = self._generate_llm_summary(sections, metadata, issues, risk_score)
+                if llm_summary and isinstance(llm_summary, str) and len(llm_summary.strip()) > 0:
+                    return llm_summary
+        except Exception as e:
+            logger.warning(f"LLM summary generation failed, falling back: {e}")
+
+        # Fallback: existing rule-based summary
         summary_parts = []
-        
-        # Friendly greeting
+
         summary_parts.append("📄 SHARTNOMA TAHLILI NATIJALARI")
         summary_parts.append("=" * 50)
-        
-        # Contract overview
+
         if metadata.contract_number:
             summary_parts.append(f"\n📋 Shartnoma raqami: {metadata.contract_number}")
         if metadata.contract_date:
             summary_parts.append(f"📅 Sana: {metadata.contract_date}")
-        
+
         summary_parts.append(f"\n🔍 Tahlil qilingan bo'limlar: {len(sections)}")
-        
-        # Risk score summary - MAIN MESSAGE
+
         if risk_score:
             score = risk_score.overall_score
-            level = risk_score.risk_level.value
-            
             if score >= 80:
-                emoji = "✅"
-                message = "A'LO DARAJADA! Shartnoma qonun talablariga to'liq mos keladi."
+                emoji = "✅"; message = "A'LO DARAJADA! Shartnoma qonun talablariga to'liq mos keladi."
             elif score >= 70:
-                emoji = "✅"
-                message = "YAXSHI! Shartnoma asosan qonun talablariga mos."
+                emoji = "✅"; message = "YAXSHI! Shartnoma asosan qonun talablariga mos."
             elif score >= 50:
-                emoji = "⚠️"
-                message = "O'RTA DARAJA. Ayrim bandlarni yaxshilash tavsiya etiladi."
+                emoji = "⚠️"; message = "O'RTA DARAJA. Ayrim bandlarni yaxshilash tavsiya etiladi."
             elif score >= 30:
-                emoji = "⚠️"
-                message = "E'TIBOR BERING! Bir nechta muhim kamchiliklar bor."
+                emoji = "⚠️"; message = "E'TIBOR BERING! Bir nechta muhim kamchiliklar bor."
             else:
-                emoji = "🔴"
-                message = "JIDDIY MUAMMOLAR! Shartnomani yurist bilan ko'rib chiqish tavsiya etiladi."
-            
+                emoji = "🔴"; message = "JIDDIY MUAMMOLAR! Shartnomani yurist bilan ko'rib chiqish tavsiya etiladi."
             summary_parts.append(f"\n{emoji} UMUMIY BAHO: {score}/100")
-            summary_parts.append(f"   {message}")
-        
-        # Issues summary - grouped by severity
+            summary_parts.append(f"{message}")
+
         if issues:
             critical_count = sum(1 for i in issues if i.severity.value == 'critical')
             high_count = sum(1 for i in issues if i.severity.value == 'high')
             medium_count = sum(1 for i in issues if i.severity.value == 'medium')
             low_count = sum(1 for i in issues if i.severity.value == 'low')
-            
+
             summary_parts.append(f"\n📊 Topilgan muammolar:")
-            
-            if critical_count:
-                summary_parts.append(f"   🔴 Jiddiy: {critical_count} ta")
-            if high_count:
-                summary_parts.append(f"   🟠 Yuqori: {high_count} ta")
-            if medium_count:
-                summary_parts.append(f"   🟡 O'rta: {medium_count} ta")
-            if low_count:
-                summary_parts.append(f"   🟢 Past: {low_count} ta")
-            
-            # Show critical issues briefly
+            if critical_count: summary_parts.append(f"🔴 Jiddiy: {critical_count} ta")
+            if high_count: summary_parts.append(f"🟠 Yuqori: {high_count} ta")
+            if medium_count: summary_parts.append(f"🟡 O'rta: {medium_count} ta")
+            if low_count: summary_parts.append(f"🟢 Past: {low_count} ta")
+
             critical_issues = [i for i in issues if i.severity.value == 'critical']
             if critical_issues:
-                summary_parts.append(f"\n⚠️  Jiddiy muammolar:")
+                summary_parts.append(f"\n⚠️ Jiddiy muammolar (qisqa):")
                 for issue in critical_issues[:3]:
-                    summary_parts.append(f"   • {issue.title}")
+                    summary_parts.append(f"• {issue.title}")
         else:
             summary_parts.append(f"\n✅ Jiddiy muammolar topilmadi!")
-        
-        # Positive note
+
         if risk_score and risk_score.overall_score >= 70:
-            summary_parts.append(f"\n💡 Shartnoma yaxshi tuzilgan. Kichik takomillashtirishlar bilan ishlatish mumkin.")
-        
+            summary_parts.append("\n💡 Shartnoma yaxshi tuzilgan. Kichik takomillashtirishlar bilan ishlatish mumkin.")
+
         return "\n".join(summary_parts)
+
+    def _generate_llm_summary(
+        self,
+        sections: List[Section],
+        metadata: ContractMetadata,
+        issues: List[ComplianceIssue],
+        risk_score: Optional[RiskScore]
+    ) -> str:
+        """Use LLM (OpenAI/Ollama via LegalRAG) to craft a concise, human-friendly Uzbek summary."""
+        try:
+            # Build structured context
+            crit = [i for i in issues if i.severity.value == 'critical']
+            high = [i for i in issues if i.severity.value == 'high']
+            med = [i for i in issues if i.severity.value == 'medium']
+            low = [i for i in issues if i.severity.value == 'low']
+
+            meta_lines = []
+            if metadata.contract_number: meta_lines.append(f"Shartnoma raqami: {metadata.contract_number}")
+            if metadata.contract_date: meta_lines.append(f"Sana: {metadata.contract_date}")
+            if metadata.party_a_name: meta_lines.append(f"1-tomon: {metadata.party_a_name}")
+            if metadata.party_b_name: meta_lines.append(f"2-tomon: {metadata.party_b_name}")
+            if metadata.total_amount and metadata.currency:
+                meta_lines.append(f"Summa: {metadata.total_amount} {metadata.currency}")
+            meta_lines.append(f"Bo'limlar soni: {len(sections)}")
+
+            score_block = []
+            if risk_score:
+                score_block.append(f"Umumiy baho: {risk_score.overall_score}/100")
+                score_block.append(f"Xavf darajasi: {risk_score.risk_level.value}")
+                score_block.append(f"Qonunga moslik: {risk_score.compliance_score}/100")
+                score_block.append(f"To'liqlik: {risk_score.completeness_score}/100")
+                score_block.append(f"Aniqlik: {risk_score.clarity_score}/100")
+                score_block.append(f"Muvozanat: {risk_score.balance_score}/100")
+
+            issues_block = [
+                f"Jiddiy: {len(crit)} ta",
+                f"Yuqori: {len(high)} ta",
+                f"O'rta: {len(med)} ta",
+                f"Past: {len(low)} ta",
+            ]
+            short_crit = [f"- {i.title}" for i in crit[:3]]
+
+            prompt = (
+                "Quyidagi ma'lumotlar asosida shartnoma tahlilining odamga yoqimli, lo'nda va amaliy xulosasini yozing. "
+                "Til: o'zbekcha (oddiy, rasmiy-neytral). Emoji va sarlavhalar moderatsiya bilan.\n\n"
+                "[Metama'lumotlar]\n" + "\n".join(meta_lines) + "\n\n" +
+                "[Ballar]\n" + "\n".join(score_block) + "\n\n" +
+                "[Muammolar soni]\n" + "\n".join(issues_block) + "\n\n" +
+                ("[Jiddiy muammolar (qisqa)]\n" + "\n".join(short_crit) + "\n\n" if short_crit else "") +
+                "Chiqish talablari:\n"
+                "- 3-6 jumladan iborat umumiy xulosa\n"
+                "- Agar jiddiy muammolar bo'lsa, 1-2 jumlada aniq tushuntiring\n"
+                "- Oxirida 2-3 amaliy tavsiya bering (bullet tarzida)\n"
+                "- Matnni o'qish oson bo'lsin, takrorlardan qoching\n"
+            )
+
+            # Use LLM without retrieval context (we just need wording)
+            system_prompt = (
+                "Siz yuridik tahlil natijasini qisqa, aniq va foydalanuvchiga qulay tarzda yozadigan yordamchisiz. "
+                "Uslub: o'zbekcha, rasmiy-neytral, lo'nda."
+            )
+
+            if getattr(self.rag, 'llm_type', None) == 'ollama':
+                resp = self.rag.llm_client.chat(
+                    model=self.rag.llm_model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": prompt},
+                    ],
+                    options={"temperature": 0.2, "num_predict": 512},
+                )
+                return resp['message']['content']
+            elif getattr(self.rag, 'llm_type', None) == 'openai':
+                resp = self.rag.openai_client.chat.completions.create(
+                    model=self.rag.openai_model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": prompt},
+                    ],
+                    temperature=0.2,
+                    max_tokens=512,
+                )
+                return resp.choices[0].message.content
+            return ""
+        except Exception as e:
+            logger.warning(f"LLM summary error: {e}")
+            return ""
     
     def _issue_to_dict(self, issue: ComplianceIssue) -> Dict:
         """Convert ComplianceIssue to dictionary."""
