@@ -4,18 +4,19 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   PlusIcon,
   MagnifyingGlassIcon,
-  FunnelIcon,
   DocumentTextIcon,
   TrashIcon,
-  EyeIcon,
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import { format } from "date-fns";
 import toast from "react-hot-toast";
-import LoadingSpinner from "../components/LoadingSpinner";
-import ContractStatusBadge from "../components/ContractStatusBadge";
-import Modal from "../components/Modal";
-import contractsService from "../services/contracts";
+import LoadingSpinner from "../../components/LoadingSpinner";
+import ContractStatusBadge from "../../components/ContractStatusBadge";
+import Modal from "../../components/Modal";
+import contractsService from "../../services/contracts";
+import { CONTRACT_TYPES, STATUS_OPTIONS } from "./contracts.constants";
+import useSelection from "../../hooks/useSelection";
+import { getRiskScoreStyles } from "@/const/const";
 
 export default function ContractsPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -23,7 +24,6 @@ export default function ContractsPage() {
   const [typeFilter, setTypeFilter] = useState("");
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedContract, setSelectedContract] = useState(null);
-  const [selectedIds, setSelectedIds] = useState([]);
 
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -37,14 +37,18 @@ export default function ContractsPage() {
         contract_type: typeFilter,
       }),
   });
-  // console.log(data);
+
+  const contractsList = data?.results || [];
+  const hasContracts = contractsList.length > 0;
+
+  const selection = useSelection(contractsList);
 
   const deleteMutation = useMutation({
     mutationFn: (ids) =>
       Promise.all(ids.map((id) => contractsService.deleteContract(id))),
     onSuccess: () => {
       setDeleteModalOpen(false);
-      setSelectedIds([]);
+      selection.clear();
 
       toast.success("Shartnoma o'chirildi");
 
@@ -70,79 +74,26 @@ export default function ContractsPage() {
     },
   });
 
-  // Haqiqiy ma'lumotlarni ishlatish
-  const contractsList = data?.results || [];
-  const hasContracts = contractsList.length > 0;
-
-  console.log("contractsList", contractsList);
-
-  const contractTypes = [
-    { value: "", label: "Barcha turlar" },
-    { value: "service", label: "Xizmat ko'rsatish" },
-    { value: "supply", label: "Yetkazib berish" },
-    { value: "lease", label: "Ijara" },
-    { value: "employment", label: "Mehnat" },
-    { value: "loan", label: "Kredit" },
-    { value: "other", label: "Boshqa" },
-  ];
-
-  const statusOptions = [
-    { value: "", label: "Barcha statuslar" },
-    // { value: "draft", label: "Qoralama" },
-    { value: "uploaded", label: "Qoralama" },
-    // { value: "pending", label: "Kutilmoqda" },
-    { value: "processing", label: "Tahlil qilinmoqda" },
-    { value: "analyzed", label: "Tahlil qilindi" },
-    { value: "approved", label: "Tasdiqlandi" },
-    { value: "rejected", label: "Rad etildi" },
-  ];
-
   const handleDelete = (contract) => {
     setSelectedContract(contract);
     setDeleteModalOpen(true);
   };
 
   const confirmDelete = () => {
-    const ids = selectedIds.length ? selectedIds : [selectedContract.id];
+    const ids = selection.selectedIds.length
+      ? selection.selectedIds
+      : [selectedContract.id];
+
     deleteMutation.mutate(ids);
-    setSelectedIds([]);
   };
 
   const handleAnalyze = (contractId) => {
     analyzeMutation.mutate(contractId);
   };
 
-  const getRiskScoreStyles = (score) => {
-    if (score == null) return "";
-
-    if (score >= 75) {
-      return "text-emerald-700 border-emerald-300 hover:bg-emerald-400";
-    }
-
-    if (score >= 50) {
-      return "text-yellow-700 border-yellow-300 hover:bg-yellow-400";
-    }
-
-    return "text-red-700 border-red-300 hover:bg-red-400";
-  };
-
-  const toggleSelect = (id) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    );
-  };
-
-  const selectAll = () => {
-    if (selectedIds.length === contractsList.length) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(contractsList.map((c) => c.id));
-    }
-  };
-
   return (
     <div
-      className="space-y-6 min-h-screen p-6
+      className="space-y-6 min-h-screen
                  bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))]
                   via-slate-50 to-white"
     >
@@ -209,7 +160,7 @@ export default function ContractsPage() {
                          border border-white/40
                          focus:outline-none focus:ring-2 focus:ring-indigo-400/40"
             >
-              {contractTypes.map((type) => (
+              {CONTRACT_TYPES.map((type) => (
                 <option key={type.value} value={type.value}>
                   {type.label}
                 </option>
@@ -227,7 +178,7 @@ export default function ContractsPage() {
                          border border-white/40
                          focus:outline-none focus:ring-2 focus:ring-indigo-400/40"
             >
-              {statusOptions.map((status) => (
+              {STATUS_OPTIONS.map((status) => (
                 <option key={status.value} value={status.value}>
                   {status.label}
                 </option>
@@ -244,10 +195,10 @@ export default function ContractsPage() {
                    border border-white/40
                    shadow-2xl shadow-indigo-200/40"
       >
-        {selectedIds.length > 1 && (
+        {selection.selectedIds.length > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-b bg-white/50 backdrop-blur-xl border-white/30 rounded-t-3xl">
             <span className="text-sm text-gray-700">
-              {selectedIds.length} ta shartnoma tanlandi
+              {selection.selectedIds.length} ta shartnoma tanlandi
             </span>
             <button
               onClick={() => setDeleteModalOpen(true)}
@@ -286,10 +237,10 @@ export default function ContractsPage() {
                     <input
                       type="checkbox"
                       checked={
-                        selectedIds.length === contractsList.length &&
+                        selection.selectedIds.length === contractsList.length &&
                         contractsList.length > 0
                       }
-                      onChange={selectAll}
+                      onChange={selection.selectAll}
                     />
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -319,7 +270,7 @@ export default function ContractsPage() {
                     className={`
     group cursor-pointer transition-all duration-200
     hover:bg-indigo-50/90
-    ${selectedIds.includes(contract.id) ? "bg-indigo-100/80" : ""}
+  ${selection.isSelected(contract.id) ? "bg-indigo-100/80" : ""}
   `}
                     onClick={() => navigate(`/contracts/${contract.id}`)}
                   >
@@ -329,8 +280,8 @@ export default function ContractsPage() {
                     >
                       <input
                         type="checkbox"
-                        checked={selectedIds.includes(contract.id)}
-                        onChange={() => toggleSelect(contract.id)}
+                        checked={selection.isSelected(contract.id)}
+                        onChange={() => selection.toggle(contract.id)}
                         className="accent-indigo-600 cursor-pointer"
                       />
                     </td>
@@ -343,7 +294,7 @@ export default function ContractsPage() {
                           </div>
                           <div className="text-sm text-gray-500">
                             {
-                              contractTypes.find(
+                              CONTRACT_TYPES.find(
                                 (t) => t.value === contract.contract_type
                               )?.label
                             }
@@ -439,8 +390,8 @@ export default function ContractsPage() {
       >
         <div className="bg-white/60 backdrop-blur-2xl border border-white/40 p-0 sm:p-0 rounded-xl">
           <p className="text-sm text-gray-500 p-6 pb-0">
-            {selectedIds.length > 1
-              ? `${selectedIds.length} ta shartnomani o‘chirmoqchimisiz? Bu amalni qaytarib bo‘lmaydi.`
+            {selection.selectedIds.length > 1
+              ? `${selection.selectedIds.length} ta shartnomani o‘chirmoqchimisiz? Bu amalni qaytarib bo‘lmaydi.`
               : `Haqiqatan ham "${selectedContract?.title}" shartnomani o‘chirmoqchimisiz? Bu amalni qaytarib bo‘lmaydi.`}
           </p>
           <div className="mt-6 flex justify-end gap-3 p-6 pt-2">

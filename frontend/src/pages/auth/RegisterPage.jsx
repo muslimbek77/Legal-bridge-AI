@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ScaleIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
-import api from '../services/api'
+import api from '@/services/api'
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({

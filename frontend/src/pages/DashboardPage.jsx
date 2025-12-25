@@ -195,24 +195,32 @@ export default function DashboardPage() {
           <h3 className="text-lg font-medium text-gray-900 mb-4">
             Risk Taqsimoti
           </h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie
-                data={displayStats.risk_distribution}
-                cx="50%"
-                cy="50%"
-                innerRadius={40}
-                outerRadius={80}
-                paddingAngle={5}
-                dataKey="value"
-              >
-                {displayStats.risk_distribution.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+          {/* Risk Distribution Pie Chart */}
+          {displayStats.risk_distribution.every((item) => item.value === 0) ? (
+            <div className="flex flex-col items-center justify-center h-[200px] text-gray-400">
+              <ExclamationTriangleIcon className="h-12 w-12 mb-2" />
+              <p className="text-sm">Risk ma’lumotlari hali mavjud emas</p>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={200}>
+              <PieChart>
+                <Pie
+                  data={displayStats.risk_distribution}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={40}
+                  outerRadius={80}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {displayStats.risk_distribution.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
           <div className="flex flex-wrap justify-center gap-2 mt-2">
             {displayStats.risk_distribution.map((item) => (
               <div key={item.name} className="flex items-center text-xs">

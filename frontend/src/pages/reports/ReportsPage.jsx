@@ -2,32 +2,22 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   DocumentArrowDownIcon,
-  TrashIcon,
-  EnvelopeIcon,
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 import { format } from "date-fns";
 import toast from "react-hot-toast";
-import LoadingSpinner from "../components/LoadingSpinner";
-import Modal from "../components/Modal";
-import reportsService from "../services/reports";
+import LoadingSpinner from "../../components/LoadingSpinner";
+import Modal from "../../components/Modal";
+import reportsService from "../../services/reports";
 
 import { useEffect } from "react";
 import { DeleteOutlined, DownloadOutlined } from "@ant-design/icons";
-
-function useDebounce(value, delay = 500) {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => clearTimeout(handler);
-  }, [value, delay]);
-
-  return debouncedValue;
-}
+import useDebounce from "../../hooks/useDebounce";
+import { getRiskScoreStyles } from "@/const/const";
+import { formatFileSize } from "./reports.utils";
+import ReportRow from "./ReportRow";
+import ReportsFilters from "./ReportsFilters";
+import useSelection from "@/hooks/useSelection";
 
 export default function ReportsPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -52,11 +42,13 @@ export default function ReportsPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: reportsService.deleteReport,
+    mutationFn: (ids) =>
+      Promise.all(ids.map((id) => reportsService.deleteReport(id))),
     onSuccess: () => {
       queryClient.invalidateQueries(["reports"]);
       toast.success("Hisobot o'chirildi");
       setDeleteModalOpen(false);
+      selection.clear();
     },
     onError: () => {
       toast.error("Xatolik yuz berdi");
@@ -78,14 +70,7 @@ export default function ReportsPage() {
   // Haqiqiy ma'lumotlarni ishlatish
   const reportsList = data?.results || [];
   const hasReports = reportsList.length > 0;
-
-  const formatFileSize = (bytes) => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-  };
+  const selection = useSelection(reportsList);
 
   const handleDownload = async (report) => {
     try {
@@ -115,9 +100,15 @@ export default function ReportsPage() {
   };
 
   const confirmDelete = () => {
-    if (selectedReport) {
-      deleteMutation.mutate(selectedReport.id);
-    }
+    const ids = selection.selectedIds.length
+      ? selection.selectedIds
+      : selectedReport
+      ? [selectedReport.id]
+      : [];
+
+    if (!ids.length) return;
+
+    deleteMutation.mutate(ids);
   };
 
   const confirmSendEmail = () => {
@@ -125,21 +116,6 @@ export default function ReportsPage() {
       sendEmailMutation.mutate({ id: selectedReport.id, email: emailAddress });
     }
   };
-
-  const getRiskScoreClass = (score) => {
-    if (score < 25) return "bg-green-100 text-green-800";
-    if (score < 50) return "bg-yellow-100 text-yellow-800";
-    if (score < 75) return "bg-orange-100 text-orange-800";
-    return "bg-red-100 text-red-800";
-  };
-
-  // if (isLoading) {
-  //   return (
-  //     <div className="flex items-center justify-center h-64">
-  //       <LoadingSpinner size="lg" />
-  //     </div>
-  //   );
-  // }
 
   return (
     <div className="space-y-6">
@@ -152,33 +128,26 @@ export default function ReportsPage() {
       </div>
 
       {/* Filters */}
-      <div className="card p-4">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1 relative">
-            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Hisobot qidirish..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="input-field pl-10"
-            />
-          </div>
-          <div className="sm:w-48">
-            <select
-              value={formatFilter}
-              onChange={(e) => setFormatFilter(e.target.value)}
-              className="input-field"
-            >
-              <option value="">Barcha formatlar</option>
-              <option value="pdf">PDF</option>
-              <option value="docx">DOCX</option>
-              <option value="html">HTML</option>
-            </select>
-          </div>
-        </div>
-      </div>
+      <ReportsFilters
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        formatFilter={formatFilter}
+        onFormatChange={setFormatFilter}
+      />
 
+      {selection.selectedIds.length > 1 && (
+        <div className="flex items-center justify-between px-4 py-3 border-b bg-white">
+          <span className="text-sm text-gray-700">
+            {selection.selectedIds.length} ta hisobot tanlandi
+          </span>
+          <button
+            onClick={() => setDeleteModalOpen(true)}
+            className="px-3 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700 transition"
+          >
+            Tanlanganlarni o‘chirish
+          </button>
+        </div>
+      )}
       {/* Reports Table */}
       <div className="card overflow-hidden">
         {isFetching && (
@@ -199,6 +168,16 @@ export default function ReportsPage() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
+                  <th className="px-4 py-3 flex items-start">
+                    <input
+                      type="checkbox"
+                      checked={
+                        selection.selectedIds.length === reportsList.length &&
+                        reportsList.length > 0
+                      }
+                      onChange={selection.selectAll}
+                    />
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Shartnoma
                   </th>
@@ -221,58 +200,14 @@ export default function ReportsPage() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {reportsList.map((report) => (
-                  <tr key={report.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {report.contract_title}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 py-1 text-xs font-medium rounded bg-gray-100 text-gray-800 uppercase">
-                        {report.format_display}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm font-semibold ${getRiskScoreClass(
-                          report.risk_score
-                        )}`}
-                      >
-                        {report.risk_score}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatFileSize(report.file_size)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {format(new Date(report.created_at), "dd.MM.yyyy HH:mm")}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center justify-end gap-3">
-                        <button
-                          onClick={() => handleDownload(report)}
-                          className="text-primary-600 hover:text-primary-900"
-                          title="Yuklab olish"
-                        >
-                          <DownloadOutlined style={{ fontSize: 20 }} />
-                        </button>
-                        {/* <button
-                          onClick={() => handleEmail(report)}
-                          className="text-green-600 hover:text-green-900"
-                          title="Email orqali yuborish"
-                        >
-                          <EnvelopeIcon className="h-5 w-5" />
-                        </button> */}
-                        <button
-                          onClick={() => handleDelete(report)}
-                          className="text-red-600 hover:text-red-900"
-                          title="O'chirish"
-                        >
-                          <DeleteOutlined style={{ fontSize: 20 }} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                  <ReportRow
+                    key={report.id}
+                    report={report}
+                    onDownload={handleDownload}
+                    onDelete={handleDelete}
+                    isSelected={selection.isSelected(report.id)}
+                    onToggle={() => selection.toggle(report.id)}
+                  />
                 ))}
               </tbody>
             </table>
@@ -287,7 +222,9 @@ export default function ReportsPage() {
         title="Hisobotni o'chirish"
       >
         <p className="text-sm text-gray-500">
-          Haqiqatan ham bu hisobotni o'chirmoqchimisiz?
+          {selection.selectedIds.length > 1
+            ? `${selection.selectedIds.length} ta hisobotni o‘chirmoqchimisiz? Bu amalni qaytarib bo‘lmaydi.`
+            : "Haqiqatan ham bu hisobotni o'chirmoqchimisiz?"}
         </p>
         <div className="mt-6 flex justify-end gap-3">
           <button
