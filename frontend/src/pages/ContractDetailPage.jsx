@@ -24,7 +24,7 @@ import ComplianceIssueBadge from "../components/ComplianceIssueBadge";
 import contractsService from "../services/contracts";
 import analysisService from "../services/analysis";
 import reportsService from "../services/reports";
-import { Alert, Card, Divider, Tag } from "antd";
+import { Alert, Card, Divider, Tag, Select, Badge } from "antd";
 import {
   CheckCircleOutlined,
   ExclamationCircleOutlined,
@@ -39,6 +39,7 @@ export default function ContractDetailPage() {
   const [showMatnUz, setShowMatnUz] = useState(false);
   const [textCopied, setTextCopied] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [severityFilter, setSeverityFilter] = useState("all");
 
   const {
     data: contract,
@@ -164,8 +165,25 @@ export default function ContractDetailPage() {
   // console.log(displayAnalysis?.status);
   // console.log("uiStatus", uiStatus);
   // console.log("displayAnalysis", displayAnalysis);
-  console.log(displayContract);
+  // console.log(displayContract);
   // console.log("uiStatus", uiStatus);
+
+  // console.log("displayContract", displayContract);
+
+  const severityOrder = {
+    critical: 4,
+    high: 3,
+    medium: 2,
+    low: 1,
+  };
+
+  const sortedIssues = [...(displayAnalysis?.issues || [])].sort(
+    (a, b) => severityOrder[b.severity] - severityOrder[a.severity]
+  );
+  const filteredIssues =
+    severityFilter === "all"
+      ? sortedIssues
+      : sortedIssues.filter((issue) => issue.severity === severityFilter);
 
   return (
     <div className="space-y-6">
@@ -198,18 +216,38 @@ export default function ContractDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          {/* Ko‘rish (View) button */}
-          {displayContract.original_file && (
-            <a
-              href={displayContract.original_file}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-secondary cursor-pointer flex items-center"
-            >
-              <ArrowTopRightOnSquareIcon className="h-5 w-5 mr-2" />
-              Ko‘rish
-            </a>
-          )}
+          {/* File action buttons */}
+          {displayContract.original_file &&
+            (() => {
+              const fileUrl = displayContract.original_file.toLowerCase();
+
+              if (fileUrl.endsWith(".docx")) {
+                return (
+                  <a
+                    href={displayContract.original_file}
+                    download
+                    className="btn-secondary cursor-pointer flex items-center"
+                  >
+                    <DocumentArrowDownIcon className="h-5 w-5 mr-2" />
+                    Yuklab olish
+                  </a>
+                );
+              } else {
+                return (
+                  <a
+                    href={displayContract.original_file}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-secondary cursor-pointer flex items-center"
+                  >
+                    <ArrowTopRightOnSquareIcon className="h-5 w-5 mr-2" />
+                    Ko‘rish
+                  </a>
+                );
+              }
+
+              return null;
+            })()}
 
           {uiStatus !== "completed" && (
             <button
@@ -505,7 +543,7 @@ export default function ContractDetailPage() {
               </div>
 
               {/* Matn.uz Imlo Tekshiruvi */}
-              {uiStatus === "completed" &&
+              {/* {uiStatus === "completed" &&
                 displayAnalysis &&
                 displayContract.extracted_text && (
                   <div className="card">
@@ -585,7 +623,7 @@ export default function ContractDetailPage() {
                       )}
                     </div>
                   </div>
-                )}
+                )} */}
             </>
           )}
 
@@ -766,13 +804,30 @@ export default function ContractDetailPage() {
             <h3 className="text-lg font-semibold text-gray-900">
               Muvofiqlik muammolari
             </h3>
-            <span className="text-sm text-gray-500">
-              Jami: {displayAnalysis?.issues.length}
-            </span>
+            <div className="flex items-center gap-3">
+              <Select
+                value={severityFilter}
+                onChange={(value) => setSeverityFilter(value)}
+                size="small"
+                style={{ width: 160, padding: 3 }}
+                options={[
+                  { value: "all", label: "Barchasi" },
+                  { value: "critical", label: "🔴 Jiddiy" },
+                  { value: "high", label: "🟠 Yuqori" },
+                  { value: "medium", label: "🟡 O‘rta" },
+                  { value: "low", label: "🟢 Past" },
+                ]}
+              />
+
+              <Badge
+                count={filteredIssues.length}
+                style={{ backgroundColor: "#1677ff" }}
+              />
+            </div>
           </div>
 
           <ul className="space-y-4  bg-gray-50 rounded-xl">
-            {displayAnalysis?.issues?.map((issue) => (
+            {filteredIssues.map((issue) => (
               <Card
                 key={issue.id}
                 variant={false}

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ScaleIcon, EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
-import { useAuthStore } from "../store/authStore";
+import { useAuthStore } from "@/store/authStore"; 
 import toast from "react-hot-toast";
 
 export default function LoginPage() {

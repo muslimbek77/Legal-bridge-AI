@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ScaleIcon, EnvelopeIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
-import api from '../services/api'
+import api from '@/services/api' 
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')

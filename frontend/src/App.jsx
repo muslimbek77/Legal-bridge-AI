@@ -1,19 +1,19 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "./store/authStore";
 import Layout from "./components/Layout";
-import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
-import ForgotPasswordPage from "./pages/ForgotPasswordPage";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
 import DashboardPage from "./pages/DashboardPage";
-import ContractsPage from "./pages/ContractsPage";
+import ContractsPage from "./pages/contract/ContractsPage";
 import ContractDetailPage from "./pages/ContractDetailPage";
 import ContractUploadPage from "./pages/ContractUploadPage";
 import AnalysisPage from "./pages/AnalysisPage";
-import ReportsPage from "./pages/ReportsPage";
+import ReportsPage from "./pages/reports/ReportsPage";
 // import LegalDatabasePage from './pages/LegalDatabasePage'
 import ProfilePage from "./pages/ProfilePage";
 import LegalDatabasePage from "./pages/LegalDatabasePage";
+import LoginPage from "./pages/auth/LoginPage";
+import RegisterPage from "./pages/auth/RegisterPage";
+import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 
 function ProtectedRoute({ children }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
