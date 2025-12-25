@@ -494,8 +494,8 @@ class SpellingChecker:
     def __init__(self):
         """Initialize the spelling checker."""
         # Allow forcing Matn.uz-only mode to avoid heuristic false positives
-        env_mode = (os.getenv("SPELLING_MODE") or os.getenv("SPELLING_STRATEGY") or "matnuz-only").lower()
-        self.external_only = env_mode in {"matnuz-only", "matnuz", "external-only"}
+        env_mode = (os.getenv("SPELLING_MODE") or os.getenv("SPELLING_STRATEGY") or "hybrid").lower()
+        self.external_only = False
 
         # Build reverse lookup for suggestions (used only in hybrid mode)
         self.all_corrections = {
@@ -511,6 +511,46 @@ class SpellingChecker:
     
     def check_text(self, text: str, language: str = 'uz-latn') -> List[SpellingError]:
         """
+        Har bir so'zni avto-detect qilib, uzspell (lotin/kirill) yoki Yandex (ruscha) backenddan natija oladi.
+        """
+        errors: List[SpellingError] = []
+        lines = text.split('\n')
+        position = 0
+        for line_num, line in enumerate(lines, 1):
+            for word, word_pos in self._extract_words(line):
+                # Avto-detect: ruscha harflar bo'lsa 'ru', kirill bo'lsa 'uz-cyrl', lotin bo'lsa 'uz-latn'
+                if re.search(r'[а-яА-ЯёЁ]', word):
+                    lang = 'ru'
+                elif re.search(r'[\u0400-\u04FF]', word):
+                    lang = 'uz-cyrl'
+                else:
+                    lang = 'uz-latn'
+                suggestion = None
+                correct = True
+                # Ruscha: Yandex Speller
+                if lang == 'ru' and self._external:
+                    res = self._external.backends[1].check(word, lang)  # YandexSpellerBackend
+                    correct = res.correct
+                    suggestion = res.suggestion
+                # O'zbek lotin/kirill: uzspell
+                elif lang.startswith('uz') and self._external:
+                    res = self._external.backends[0].check(word, lang)  # UzSpellBackend
+                    correct = res.correct
+                    suggestion = res.suggestion
+                if not correct and suggestion:
+                    errors.append(SpellingError(
+                        word=word,
+                        suggestion=suggestion,
+                        error_type=SpellingErrorType.TYPO,
+                        position=position + word_pos,
+                        line_number=line_num,
+                        context=self._get_context(line, word_pos, word),
+                        language=lang,
+                        description=f"Imloviy xato: '{word}' → '{suggestion}'"
+                    ))
+            position += len(line) + 1
+        return errors
+        """
         Check text for spelling errors.
         
         Args:
@@ -520,8 +560,45 @@ class SpellingChecker:
         Returns:
             List of SpellingError objects
         """
-        if self.external_only:
-            return self._check_external_only(text, language)
+        # Har bir so'zni ruscha bo'lsa Yandex, o'zbek lotin/kirill bo'lsa uzspell orqali tekshir
+        errors: List[SpellingError] = []
+        lines = text.split('\n')
+        position = 0
+        for line_num, line in enumerate(lines, 1):
+            for word, word_pos in self._extract_words(line):
+                lang = language
+                # Avto-detect: ruscha harflar bo'lsa 'ru', kirill bo'lsa 'uz-cyrl', lotin bo'lsa 'uz-latn'
+                if re.search(r'[а-яА-ЯёЁ]', word):
+                    lang = 'ru'
+                elif re.search(r'[\u0400-\u04FF]', word):
+                    lang = 'uz-cyrl'
+                else:
+                    lang = 'uz-latn'
+                suggestion = None
+                correct = True
+                # Ruscha: Yandex Speller
+                if lang == 'ru' and self._external:
+                    res = self._external.backends[1].check(word, lang)  # YandexSpellerBackend
+                    correct = res.correct
+                    suggestion = res.suggestion
+                # O'zbek lotin/kirill: uzspell
+                elif lang.startswith('uz') and self._external:
+                    res = self._external.backends[0].check(word, lang)  # UzSpellBackend
+                    correct = res.correct
+                    suggestion = res.suggestion
+                if not correct and suggestion:
+                    errors.append(SpellingError(
+                        word=word,
+                        suggestion=suggestion,
+                        error_type=SpellingErrorType.TYPO,
+                        position=position + word_pos,
+                        line_number=line_num,
+                        context=self._get_context(line, word_pos, word),
+                        language=lang,
+                        description=f"Imloviy xato: '{word}' → '{suggestion}'"
+                    ))
+            position += len(line) + 1
+        return errors
 
         errors = []
         seen_errors = set()

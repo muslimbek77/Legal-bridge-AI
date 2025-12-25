@@ -15,6 +15,62 @@ import logging
 import os
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
+import requests
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class BackendResult:
+    """Result of a spelling check."""
+    correct: bool
+    suggestion: Optional[str] = None
+
+
+class UzSpellBackend:
+    """Local Flask uzspell API backend (lotin/kirill)."""
+    API_URL = os.getenv("UZSPELL_API_URL", "http://localhost:4000/api/spell")
+    TIMEOUT = 3.0
+
+    def __init__(self):
+        self._cache = {}
+
+    def check(self, word: str, language: str) -> BackendResult:
+        key = (word, language)
+        if key in self._cache:
+            return self._cache[key]
+        try:
+            resp = requests.post(self.API_URL, json={"word": word}, timeout=self.TIMEOUT)
+            if resp.status_code != 200:
+                return BackendResult(correct=True)
+            data = resp.json()
+            correct = data.get("correct", True)
+            suggestions = data.get("suggestions", [])
+            suggestion = None
+            if not correct and suggestions:
+                suggestion = suggestions[0]
+            result = BackendResult(correct=correct, suggestion=suggestion)
+        except Exception:
+            result = BackendResult(correct=True)
+        self._cache[key] = result
+        return result
+"""
+External spelling backends facade.
+Backends are optional and only used if the corresponding dependency and
+language dictionaries are available on the system.
+
+Supported backends (optional):
+- Matn.uz HTTP API for Uzbek spelling correction
+- Enchant/Hunspell (via pyenchant) for Uzbek/Russian word-level checks
+- LanguageTool (via language_tool_python) for Russian sentence-level checks
+"""
+
+from __future__ import annotations
+
+import logging
+import os
+from dataclasses import dataclass
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -367,7 +423,7 @@ class CombinedBackend:
     """Try multiple backends in order until one yields a correction."""
 
     def __init__(self) -> None:
-        self.backends = [MatnUzBackend(), YandexSpellerBackend(), EnchantBackend(), LanguageToolBackend()]
+        self.backends = [UzSpellBackend(), MatnUzBackend(), YandexSpellerBackend(), EnchantBackend(), LanguageToolBackend()]
 
     def check(self, word: str, language: str) -> BackendResult:
         for backend in self.backends:

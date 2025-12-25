@@ -15,10 +15,9 @@ hunspell_latin = hunspell.HunSpell(
     os.path.join(LATIN_PATH, 'uz_UZ.aff')
 )
 hunspell_cyrillic = hunspell.HunSpell(
-    os.path.join(CYRILLIC_PATH, 'uz_UZ@cyrillic.dic'),
-    os.path.join(CYRILLIC_PATH, 'uz_UZ@cyrillic.aff')
+    os.path.join(CYRILLIC_PATH, 'uz_UZ_Cyrl.dic'),
+    os.path.join(CYRILLIC_PATH, 'uz_UZ_Cyrl.aff')
 )
-
 def detect_script(word):
     # Kirill harflari: U+0400 ... U+04FF
     for ch in word:
@@ -50,4 +49,5 @@ def spell_check():
     })
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5005)
+    from waitress import serve
+    serve(app, host='0.0.0.0', port=4000)
