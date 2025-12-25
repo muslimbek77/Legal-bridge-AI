@@ -4,20 +4,244 @@ Backends are optional and only used if the corresponding dependency and
 language dictionaries are available on the system.
 
 Supported backends (optional):
+- Matn.uz HTTP API for Uzbek spelling correction
 - Enchant/Hunspell (via pyenchant) for Uzbek/Russian word-level checks
 - LanguageTool (via language_tool_python) for Russian sentence-level checks
 """
 
 from __future__ import annotations
 
+import logging
+import os
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Dict, Optional
+
+logger = logging.getLogger(__name__)
+
+
+def _safe_lower(value: Optional[str]) -> str:
+    """Lower-case helper that tolerates None."""
+    return value.lower() if isinstance(value, str) else ""
 
 
 @dataclass
 class BackendResult:
     correct: bool
     suggestion: Optional[str] = None
+
+
+class MatnUzBackend:
+    """Matn.uz API client.
+
+    Uses the /api/v1/correct endpoint to obtain spelling suggestions. The
+    backend is intentionally tolerant: missing dependencies, missing tokens or
+    transient HTTP failures will simply skip correction instead of failing the
+    pipeline.
+    """
+
+    API_URL = "https://matn.uz/api/v1/correct"
+
+    def __init__(self, token: Optional[str] = None, timeout: float = 4.0) -> None:
+        self._token = token or os.getenv("MATNUZ_API_TOKEN") or os.getenv("MATN_UZ_API_TOKEN")
+        self._timeout = timeout
+        self._cache: Dict[tuple[str, str], BackendResult] = {}
+
+        try:
+            import requests  # type: ignore
+
+            self._requests = requests
+            self._session = requests.Session()
+        except Exception:
+            self._requests = None
+            self._session = None
+
+    @property
+    def available(self) -> bool:
+        return bool(self._token and self._session and self._requests)
+
+    def _normalize_lang(self, language: str) -> str:
+        if not language:
+            return "uz"
+        # Matn.uz primarily supports Uzbek; fall back to uz for other variants
+        if language.startswith("uz"):
+            return "uz"
+        return language
+
+    def check(self, word: str, language: str) -> BackendResult:
+        if not self.available:
+            return BackendResult(correct=True)
+
+        lang = self._normalize_lang(language)
+        cache_key = (lang, word)
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+
+        headers = {
+            "Authorization": f"Bearer {self._token}",
+            "Accept": "application/json",
+        }
+        payload = {"text": word, "lang": lang}
+
+        try:
+            response = self._session.post(
+                self.API_URL,
+                json=payload,
+                headers=headers,
+                timeout=self._timeout,
+            )
+            if response.status_code >= 500:
+                return BackendResult(correct=True)
+
+            suggestion = self._parse_response(response.json(), word)
+            result = BackendResult(correct=(suggestion is None), suggestion=suggestion)
+        except Exception as exc:  # Network or JSON errors
+            logger.debug("Matn.uz backend failed; skipping: %s", exc)
+            result = BackendResult(correct=True)
+
+        self._cache[cache_key] = result
+        return result
+
+    def _parse_response(self, data: Any, original: str) -> Optional[str]:
+        """Extract a suggestion from a Matn.uz response.
+
+        The API shape is not strictly documented; this method accepts several
+        possible layouts without failing the pipeline.
+        """
+
+        def pick_from_container(container: Dict[str, Any]) -> Optional[str]:
+            if not isinstance(container, dict):
+                return None
+
+            # Direct corrected text fields
+            for key in ("corrected_text", "correctedText", "result", "correct_text"):
+                val = container.get(key)
+                sugg = normalize_value(val)
+                if sugg:
+                    return sugg
+
+            # Arrays of corrections/errors/suggestions
+            for key in ("corrections", "errors", "result", "suggestions"):
+                val = container.get(key)
+                sugg = normalize_value(val)
+                if sugg:
+                    return sugg
+
+            # Boolean flags with suggestion fields
+            if container.get("correct") is False or container.get("is_correct") is False:
+                sugg = normalize_value(
+                    container.get("suggestion")
+                    or container.get("suggest")
+                    or container.get("expected")
+                )
+                if sugg:
+                    return sugg
+
+            return None
+
+        def normalize_value(value: Any) -> Optional[str]:
+            """Handle strings, dicts, or lists and return a suggestion."""
+            if isinstance(value, str):
+                value = value.strip()
+                if value and _safe_lower(value) != _safe_lower(original):
+                    return value
+                return None
+
+            if isinstance(value, dict):
+                for key in ("suggestion", "suggest", "expected", "replace", "replace_to", "correct"):
+                    cand = value.get(key)
+                    normalized = normalize_value(cand)
+                    if normalized:
+                        return normalized
+                return None
+
+            if isinstance(value, list):
+                for item in value:
+                    normalized = normalize_value(item)
+                    if normalized:
+                        return normalized
+                return None
+
+            return None
+
+        # If the API returns a plain string
+        if isinstance(data, str):
+            data = data.strip()
+            if data and _safe_lower(data) != _safe_lower(original):
+                return data
+            return None
+
+        # If the API nests payload under a data key
+        if isinstance(data, dict):
+            suggestion = pick_from_container(data)
+            if suggestion:
+                return suggestion
+            nested = data.get("data")
+            if nested:
+                return pick_from_container(nested)
+
+        return None
+
+
+class YandexSpellerBackend:
+    """Yandex Speller API for Russian text."""
+
+    API_URL = "https://speller.yandex.net/services/spellservice.json/checkText"
+
+    def __init__(self, timeout: float = 4.0) -> None:
+        self._timeout = timeout
+        self._cache: Dict[tuple[str, str], BackendResult] = {}
+        try:
+            import requests  # type: ignore
+
+            self._requests = requests
+            self._session = requests.Session()
+        except Exception:
+            self._requests = None
+            self._session = None
+
+    @property
+    def available(self) -> bool:
+        return bool(self._session and self._requests)
+
+    def check(self, word: str, language: str) -> BackendResult:
+        if language != "ru":
+            return BackendResult(correct=True)
+        if not self.available:
+            return BackendResult(correct=True)
+
+        cache_key = (language, word)
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+
+        params = {"text": word, "lang": "ru"}
+        try:
+            resp = self._session.get(self.API_URL, params=params, timeout=self._timeout)
+            if resp.status_code >= 500:
+                result = BackendResult(correct=True)
+            else:
+                data = resp.json()
+                suggestion = self._parse_response(data, word)
+                result = BackendResult(correct=(suggestion is None), suggestion=suggestion)
+        except Exception as exc:
+            logger.debug("Yandex Speller backend failed; skipping: %s", exc)
+            result = BackendResult(correct=True)
+
+        self._cache[cache_key] = result
+        return result
+
+    def _parse_response(self, data: Any, original: str) -> Optional[str]:
+        """Extract first suggestion from Yandex Speller response."""
+        if not isinstance(data, list):
+            return None
+        for item in data:
+            if not isinstance(item, dict):
+                continue
+            suggestions = item.get("s")
+            if suggestions and isinstance(suggestions, list):
+                for s in suggestions:
+                    if isinstance(s, str) and _safe_lower(s) != _safe_lower(original):
+                        return s
+        return None
 
 
 class EnchantBackend:
@@ -143,7 +367,7 @@ class CombinedBackend:
     """Try multiple backends in order until one yields a correction."""
 
     def __init__(self) -> None:
-        self.backends = [EnchantBackend(), LanguageToolBackend()]
+        self.backends = [MatnUzBackend(), YandexSpellerBackend(), EnchantBackend(), LanguageToolBackend()]
 
     def check(self, word: str, language: str) -> BackendResult:
         for backend in self.backends:

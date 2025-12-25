@@ -8,6 +8,11 @@ Environment variables (optional):
 - `USE_PADDLE`: `1` to enable PaddleOCR fallback (if installed) for tricky Cyrillic scans.
 - `OCR_CHUNK_SIZE`: Process PDFs in page chunks to reduce memory/time on long files (requires PyMuPDF). Example: `5` (process 5 pages per chunk). Default: `0` (disabled).
 
+### Spelling (Matn.uz)
+
+- `MATNUZ_API_TOKEN` (preferred) or `MATN_UZ_API_TOKEN`: Bearer token for https://matn.uz/api/v1/correct. Needed to run Matn.uz-backed Uzbek spelling checks inside the AI engine. Keep this secret out of version control.
+- `SPELLING_MODE` (optional): `matnuz-only` (default) to use only the Matn.uz backend and skip heuristic rules; set to `hybrid` to re-enable local heuristics + backends.
+
 Runtime requirements:
 
 - Tesseract 5.x with languages: `uzb` (Uzbek Cyrillic), `uzb_latn` (Uzbek Latin), `rus` (Russian)

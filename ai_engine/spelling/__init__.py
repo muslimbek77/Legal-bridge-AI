@@ -3,6 +3,7 @@ Spelling and Grammar Checker Module.
 Supports Uzbek (Latin & Cyrillic) and Russian languages.
 """
 
+import os
 import re
 import logging
 from typing import Dict, List, Optional, Tuple
@@ -492,12 +493,16 @@ class SpellingChecker:
     
     def __init__(self):
         """Initialize the spelling checker."""
-        # Build reverse lookup for suggestions
+        # Allow forcing Matn.uz-only mode to avoid heuristic false positives
+        env_mode = (os.getenv("SPELLING_MODE") or os.getenv("SPELLING_STRATEGY") or "matnuz-only").lower()
+        self.external_only = env_mode in {"matnuz-only", "matnuz", "external-only"}
+
+        # Build reverse lookup for suggestions (used only in hybrid mode)
         self.all_corrections = {
             **self.UZBEK_CORRECTIONS,
             **self.RUSSIAN_CORRECTIONS
         }
-        # Optional external backends (Hunspell/LanguageTool) — safe if missing
+        # Optional external backends (Matn.uz/Hunspell/LanguageTool) — safe if missing
         try:
             from .backends import CombinedBackend  # type: ignore
             self._external = CombinedBackend()
@@ -515,6 +520,9 @@ class SpellingChecker:
         Returns:
             List of SpellingError objects
         """
+        if self.external_only:
+            return self._check_external_only(text, language)
+
         errors = []
         seen_errors = set()
 
@@ -706,6 +714,33 @@ class SpellingChecker:
             
             position += len(line) + 1  # +1 for newline
         
+        return errors
+
+    def _check_external_only(self, text: str, language: str) -> List[SpellingError]:
+        """Use external backends only (Matn.uz preferred) to avoid heuristic noise."""
+        errors: List[SpellingError] = []
+        if self._external is None:
+            return errors
+
+        lines = text.split('\n')
+        position = 0
+        for line_num, line in enumerate(lines, 1):
+            for word, word_pos in self._extract_words(line):
+                if not self._should_external_check(word):
+                    continue
+                suggestion = self._external_suggest(word, language)
+                if suggestion and suggestion.lower() != word.lower():
+                    errors.append(SpellingError(
+                        word=word,
+                        suggestion=self._preserve_case(word, suggestion),
+                        error_type=SpellingErrorType.TYPO,
+                        position=position + word_pos,
+                        line_number=line_num,
+                        context=self._get_context(line, word_pos, word),
+                        language=language,
+                        description=f"Imloviy xato: '{word}' → '{suggestion}'"
+                    ))
+            position += len(line) + 1
         return errors
     
     def _extract_words(self, line: str) -> List[Tuple[str, int]]:
