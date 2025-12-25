@@ -22,6 +22,7 @@ env = environ.Env(
     ALLOWED_HOSTS=(list, ['*']),
 )
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+UZSPELL_API_URL = "http://localhost:4000/api/spell"
 
 # Security
 SECRET_KEY = env('SECRET_KEY', default='django-insecure-change-this-in-production')
