@@ -1,0 +1,36 @@
+[Unit]
+Description=Celery Service for Legal Bridge AI
+After=network.target redis.service postgresql.service
+
+[Service]
+Type=forking
+User=root
+WorkingDirectory=/home/legal_ai/Legal-bridge-AI/backend
+
+# Environment variables
+EnvironmentFile=/home/legal_ai/Legal-bridge-AI/.env
+Environment="PATH=/home/legal_ai/Legal-bridge-AI/backend/venv/bin"
+Environment="PYTHONUNBUFFERED=1"
+
+# Start command with time limits
+ExecStart=/home/legal_ai/Legal-bridge-AI/backend/venv/bin/celery -A config worker \
+  -l info \
+  --concurrency=2 \
+  --hostname=worker@%%h \
+  --soft-time-limit=1200 \
+  --time-limit=1500 \
+  --logfile=/var/log/legal_ai/celery_worker.log \
+  --pidfile=/var/run/legal_ai/celery_worker.pid \
+  --detach
+
+# Restart policy
+Restart=on-failure
+RestartSec=10
+StartLimitInterval=600
+StartLimitBurst=5
+
+# Process management
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target

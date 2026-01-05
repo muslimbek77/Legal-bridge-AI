@@ -1,0 +1,632 @@
+{
+  "laws": [
+    {
+      "name": "O'zbekiston Respublikasining Fuqarolik kodeksi",
+      "name_ru": "Гражданский кодекс Республики Узбекистан",
+      "short_name": "FK",
+      "law_type": "code",
+      "number": "163-I",
+      "adoption_date": "1995-12-21",
+      "effective_date": "1996-03-01",
+      "status": "active",
+      "description": "Fuqarolik munosabatlarini tartibga soluvchi asosiy qonun",
+      "source_url": "https://lex.uz/docs/180552",
+      "chapters": [
+        {
+          "number": "27",
+          "title": "Shartnoma tushunchasi va shartlari",
+          "order": 1
+        },
+        {
+          "number": "28",
+          "title": "Shartnoma tuzish",
+          "order": 2
+        },
+        {
+          "number": "29",
+          "title": "Shartnomani o'zgartirish va bekor qilish",
+          "order": 3
+        },
+        {
+          "number": "30",
+          "title": "Oldi-sotdi shartnomasi",
+          "order": 4
+        },
+        {
+          "number": "34",
+          "title": "Ijara",
+          "order": 5
+        },
+        {
+          "number": "37",
+          "title": "Pudrat",
+          "order": 6
+        },
+        {
+          "number": "39",
+          "title": "Haq evaziga xizmat ko'rsatish",
+          "order": 7
+        }
+      ],
+      "articles": [
+        {
+          "number": "353",
+          "title": "Shartnoma tushunchasi",
+          "chapter_number": "27",
+          "content": "Shartnoma - bu ikki yoki undan ortiq shaxslarning fuqarolik huquqlari va majburiyatlarini belgilash, o'zgartirish yoki bekor qilish to'g'risidagi kelishuvi. Shartnomaga majburiyatlar to'g'risidagi qoidalar qo'llaniladi, agar bu qoidalar alohida shartnoma turlariga tegishli bo'lgan normalar bilan yoki shartnomaning mohiyatidan kelib chiqadigan normalar bilan boshqacha tartibga solinmagan bo'lsa.",
+          "is_mandatory": true,
+          "applies_to": ["all"],
+          "keywords": ["shartnoma", "kelishuv", "huquq", "majburiyat"],
+          "order": 1
+        },
+        {
+          "number": "354",
+          "title": "Shartnoma erkinligi",
+          "chapter_number": "27",
+          "content": "Fuqarolar va yuridik shaxslar shartnoma tuzishda erkindir. Shartnoma tuzishga majburlashga yo'l qo'yilmaydi, bundan qonunda nazarda tutilgan hollar yoki ixtiyoriy ravishda qabul qilingan majburiyatlar mustasno. Tomonlar qonunda nazarda tutilgan va nazarda tutilmagan shartnomalar tuzishlari mumkin. Tomonlar turli shartnomalar elementlarini o'z ichiga olgan shartnoma (aralash shartnoma) tuzishlari mumkin.",
+          "is_mandatory": true,
+          "applies_to": ["all"],
+          "keywords": ["erkinlik", "majburlash", "aralash shartnoma"],
+          "order": 2
+        },
+        {
+          "number": "356",
+          "title": "Shartnomaning shakli",
+          "chapter_number": "27",
+          "content": "Shartnoma bitim uchun belgilangan shaklda tuziladi. Agar tomonlar shartnomani ma'lum shaklda tuzish to'g'risida kelishgan bo'lsalar, garchi qonun bunday shaklni talab qilmasa ham, shartnoma shu shaklda tuzilgan bo'lsa, tuzilgan hisoblanadi. Yozma shaklda tuziladigan shartnoma tomonlar imzolagan bitta hujjat tuzish yo'li bilan yoki pochta, telegraf, teletayp, telefon, elektron yoki boshqa aloqa orqali hujjatlar almashish yo'li bilan tuzilishi mumkin.",
+          "is_mandatory": true,
+          "applies_to": ["all"],
+          "keywords": ["shakl", "yozma", "elektron", "imzo"],
+          "order": 3
+        },
+        {
+          "number": "357",
+          "title": "Shartnomaning ofertasi",
+          "chapter_number": "28",
+          "content": "Oferta - bu shartnoma tuzish taklifi bo'lib, u yetarli darajada aniq bo'lishi va taklif qiluvchining rozilik olgan taqdirda o'zini bog'lanishini bildirishi kerak. Oferta shartnomaning muhim shartlarini o'z ichiga olishi kerak. Oferta u bilan tanishishi mumkin bo'lgan shaxsga yuborilgan paytdan e'tiboran kuchga kiradi.",
+          "is_mandatory": false,
+          "applies_to": ["all"],
+          "keywords": ["oferta", "taklif", "muhim shartlar"],
+          "order": 4
+        },
+        {
+          "number": "358",
+          "title": "Ofertaning qabul qilinishi (aksept)",
+          "chapter_number": "28",
+          "content": "Aksept - ofertani qabul qilgan shaxsning javob harakati bo'lib, uning oferta shartlariga to'liq va so'zsiz roziligini bildiradi. Jimlik aksept hisoblanmaydi, bundan qonun yoki tomonlarning kelishuvidan boshqacha kelib chiqadigan hollar mustasno.",
+          "is_mandatory": false,
+          "applies_to": ["all"],
+          "keywords": ["aksept", "rozilik", "javob"],
+          "order": 5
+        },
+        {
+          "number": "361",
+          "title": "Shartnomaning muhim shartlari",
+          "chapter_number": "27",
+          "content": "Shartnoma tuzilgan hisoblanadi, agar tomonlar o'rtasida shartnomaning barcha muhim shartlari bo'yicha tegishli shaklda kelishuv erishilgan bo'lsa. Muhim shartlar quyidagilardir: shartnomaning predmeti to'g'risidagi shartlar; qonunda yoki boshqa huquqiy hujjatlarda shu turdagi shartnomalar uchun muhim yoki zarur deb ko'rsatilgan shartlar; tomonlardan birining arizasiga ko'ra kelishuv erishilishi kerak bo'lgan barcha shartlar.",
+          "is_mandatory": true,
+          "applies_to": ["all"],
+          "keywords": ["muhim shartlar", "predmet", "kelishuv"],
+          "order": 6
+        },
+        {
+          "number": "362",
+          "title": "Shartnomaning narxi",
+          "chapter_number": "27",
+          "content": "Shartnomaning ijrosi tomonlar kelishgan narx bo'yicha to'lanadi. Qonunda nazarda tutilgan hollarda tomonlar kelishgan narxga vakolatli davlat organlari tomonidan belgilangan yoki tartibga solinadigan narxlar (tariflar, stavkalar va hokazolar) qo'llaniladi. Shartnomada narx nazarda tutilmagan va shartnoma shartlaridan kelib chiqib aniqlab bo'lmaydigan hollarda ijro shunga o'xshash vaziyatlarda odatda olinadigan narx bo'yicha to'lanishi kerak.",
+          "is_mandatory": false,
+          "applies_to": ["all"],
+          "keywords": ["narx", "to'lov", "tarif"],
+          "order": 7
+        },
+        {
+          "number": "363",
+          "title": "Shartnomaning amal qilish muddati",
+          "chapter_number": "27",
+          "content": "Shartnomaning amal qilish muddati tomonlar kelishuvida belgilanadi. Shartnomada boshqacha ko'rsatilmagan bo'lsa, shartnomaning to'xtashiga qadar tomonlarning shartnomadan kelib chiqadigan majburiyatlarini bajarish to'g'risidagi qoidalar amal qilishda davom etadi. Shartnomaning muddati tugashi tomonlarni shartnomani buzganlik uchun javobgarlikdan ozod qilmaydi.",
+          "is_mandatory": false,
+          "applies_to": ["all"],
+          "keywords": ["muddat", "amal qilish", "tugatish"],
+          "order": 8
+        },
+        {
+          "number": "364",
+          "title": "Ommaviy shartnoma",
+          "chapter_number": "28",
+          "content": "Ommaviy shartnoma - bu tijorat tashkiloti tomonidan tuziladigan va uning faoliyat xususiyatidan kelib chiqib, har bir murojaat qilgan shaxsga nisbatan bajarishi shart bo'lgan majburiyatlarni (chakana savdo, umumiy ovqatlanish, maishiy xizmat ko'rsatish, mehmonxona xizmati, aloqa xizmatlari, tashish va hokazo) belgilab qo'yuvchi shartnoma. Tijorat tashkiloti bunday shartnoma tuzishdan bosh tortishga haqli emas, agar tegishli tovarlarni, xizmatlarni taqdim etish, tegishli ishlarni bajarish imkoniyatiga ega bo'lsa.",
+          "is_mandatory": true,
+          "applies_to": ["retail", "service"],
+          "keywords": ["ommaviy shartnoma", "tijorat", "xizmat"],
+          "order": 9
+        },
+        {
+          "number": "365",
+          "title": "Dastlabki shartnoma",
+          "chapter_number": "28",
+          "content": "Dastlabki shartnomaga ko'ra tomonlar kelajakda mol-mulkni topshirish, ish bajarish yoki xizmatlar ko'rsatish to'g'risidagi shartnoma (asosiy shartnoma) tuzishni o'z zimmasiga oladi. Dastlabki shartnomada asosiy shartnomaning predmeti, shuningdek boshqa muhim shartlari ko'rsatilishi kerak. Dastlabki shartnomada asosiy shartnoma tuziladigan muddat belgilanadi.",
+          "is_mandatory": false,
+          "applies_to": ["all"],
+          "keywords": ["dastlabki shartnoma", "asosiy shartnoma", "kelajak"],
+          "order": 10
+        },
+        {
+          "number": "366",
+          "title": "Qo'shilish shartnomasi",
+          "chapter_number": "28",
+          "content": "Qo'shilish shartnomasi deb, shartlari bir tomon tomonidan formulalar yoki boshqa standart shakllarda aniqlanadigan va ikkinchi tomon faqat shartnomaga to'liq qo'shilish yo'li bilan qabul qilishi mumkin bo'lgan shartnomaga aytiladi. Qo'shilgan tomon shartnomani bekor qilish yoki o'zgartirishni talab qilishga haqli, agar qo'shilish shartnomasi odatiy shart-sharoitlardan farqli ravishda ikkinchi tomonni muhim huquqlardan mahrum qilsa.",
+          "is_mandatory": false,
+          "applies_to": ["all"],
+          "keywords": ["qo'shilish shartnomasi", "standart shakl", "formula"],
+          "order": 11
+        },
+        {
+          "number": "369",
+          "title": "Shartnomani o'zgartirish va bekor qilish asoslari",
+          "chapter_number": "29",
+          "content": "Shartnomani o'zgartirish va bekor qilish tomonlarning kelishuvi bilan amalga oshirilishi mumkin, agar qonunda yoki shartnomada boshqacha tartib nazarda tutilmagan bo'lsa. Tomonlardan birining talabi bo'yicha shartnoma faqat boshqa tomon tomonidan shartnoma jiddiy ravishda buzilgan yoki qonunda yoki shartnomada nazarda tutilgan boshqa hollarda sud qaroriga ko'ra o'zgartirilishi yoki bekor qilinishi mumkin.",
+          "is_mandatory": true,
+          "applies_to": ["all"],
+          "keywords": ["o'zgartirish", "bekor qilish", "buzish"],
+          "order": 12
+        },
+        {
+          "number": "370",
+          "title": "Shartnomani jiddiy buzish",
+          "chapter_number": "29",
+          "content": "Shartnomaning bir tomon tomonidan jiddiy buzilishi shartnomani bekor qilish yoki o'zgartirish uchun asos bo'ladi. Shartnomaning tomonlardan biri tomonidan shunday buzilishi jiddiy hisoblanadiki, bunda ikkinchi tomonga shartnoma tuzishda u nazarda tutishi mumkin bo'lgan narsadan sezilarli darajada mahrum qiluvchi zarar yetkaziladi.",
+          "is_mandatory": true,
+          "applies_to": ["all"],
+          "keywords": ["jiddiy buzish", "zarar", "bekor qilish"],
+          "order": 13
+        },
+        {
+          "number": "386",
+          "title": "Oldi-sotdi shartnomasi tushunchasi",
+          "chapter_number": "30",
+          "content": "Oldi-sotdi shartnomasi bo'yicha bir tomon (sotuvchi) mol-mulkni (tovar) ikkinchi tomonning (xaridor) mulkiga o'tkazishga majbur, xaridor esa bu tovarni qabul qilishga va uning uchun ma'lum pul summasini (narx) to'lashga majbur. Tovarning sifat va miqdoriga nisbatan talablar shartnomada belgilanishi kerak.",
+          "is_mandatory": true,
+          "applies_to": ["sale", "purchase"],
+          "keywords": ["oldi-sotdi", "sotuvchi", "xaridor", "tovar", "narx"],
+          "order": 14
+        },
+        {
+          "number": "387",
+          "title": "Tovarning narxi",
+          "chapter_number": "30",
+          "content": "Xaridor tovarni shartnomada nazarda tutilgan narx bo'yicha to'lashi shart. Shartnomada tovar narxi ko'rsatilmagan va shartnoma shartlaridan kelib chiqib aniqlab bo'lmaydigan hollarda, xaridor shunga o'xshash hollarda odatda bunday tovarlarga olinadigan narxni to'lashi kerak.",
+          "is_mandatory": false,
+          "applies_to": ["sale", "purchase"],
+          "keywords": ["narx", "to'lov", "tovar"],
+          "order": 15
+        },
+        {
+          "number": "389",
+          "title": "Tovarning sifati",
+          "chapter_number": "30",
+          "content": "Sotuvchi xaridorga sifati shartnoma shartlariga mos tovarni berishi shart. Shartnomada sifatga nisbatan shartlar bo'lmagan taqdirda, sotuvchi xaridorga odatda bunday tovarlardan kutilishi mumkin bo'lgan maqsadlarda foydalanishga yaroqli tovarni topshirishi shart. Agar sotuvchi tovarni xaridorga sotishda xaridor unga ma'lum qilgan aniq maqsaddan xabardor bo'lsa, sotuvchi xaridorga ushbu maqsad uchun yaroqli tovarni topshirishi shart.",
+          "is_mandatory": true,
+          "applies_to": ["sale", "purchase"],
+          "keywords": ["sifat", "maqsad", "yaroqlilik"],
+          "order": 16
+        },
+        {
+          "number": "535",
+          "title": "Ijara shartnomasi tushunchasi",
+          "chapter_number": "34",
+          "content": "Ijara shartnomasi bo'yicha ijaraga beruvchi (ijara beruvchi) ijaraga oluvchiga (ijarachiga) mol-mulkni vaqtincha egalik qilish va foydalanish yoki vaqtincha foydalanish uchun haq evaziga taqdim etishga majbur. Ijara shartnomasi ko'chmas mulk uchun yozma shaklda tuzilishi va davlat ro'yxatidan o'tkazilishi kerak. Ijara muddati shartnomada belgilanadi.",
+          "is_mandatory": true,
+          "applies_to": ["lease", "rent"],
+          "keywords": ["ijara", "ijaraga beruvchi", "ijarachi", "ko'chmas mulk"],
+          "order": 17
+        },
+        {
+          "number": "537",
+          "title": "Ijara haqi",
+          "chapter_number": "34",
+          "content": "Ijarachi ijara shartnomasi shartlariga muvofiq ijaraga beruvchiga ijara haqini o'z vaqtida to'lashi shart. Ijara haqi tomonlar kelishuviga ko'ra qat'iy pul summasida, foizlarda yoki boshqa shaklda belgilanishi mumkin. Agar boshqacha kelishilmagan bo'lsa, ijara haqi oyma-oy to'lanadi.",
+          "is_mandatory": true,
+          "applies_to": ["lease", "rent"],
+          "keywords": ["ijara haqi", "to'lov", "muddat"],
+          "order": 18
+        },
+        {
+          "number": "539",
+          "title": "Ijara muddati",
+          "chapter_number": "34",
+          "content": "Ijara shartnomasi tomonlar kelishgan muddatga tuziladi. Agar shartnomada ijara muddati belgilanmagan bo'lsa, shartnoma noma'lum muddatga tuzilgan hisoblanadi. Bunday holatda har bir tomon ikkinchi tomonga uch oy oldin ogohlantirgan holda shartnomadan istalgan vaqtda voz kechishga haqli.",
+          "is_mandatory": false,
+          "applies_to": ["lease", "rent"],
+          "keywords": ["muddat", "noma'lum muddat", "ogohlantirish"],
+          "order": 19
+        },
+        {
+          "number": "631",
+          "title": "Pudrat shartnomasi tushunchasi",
+          "chapter_number": "37",
+          "content": "Pudrat shartnomasi bo'yicha bir tomon (pudratchi) ikkinchi tomonning (buyurtmachining) topshirig'iga ko'ra ma'lum ishni bajarib, uning natijasini buyurtmachiga topshirishga, buyurtmachi esa ish natijasini qabul qilib olishga va uni to'lashga majbur. Pudrat shartnomasi ish bajarish muddatini va narxini o'z ichiga olishi kerak.",
+          "is_mandatory": true,
+          "applies_to": ["contract", "construction"],
+          "keywords": ["pudrat", "pudratchi", "buyurtmachi", "ish"],
+          "order": 20
+        },
+        {
+          "number": "633",
+          "title": "Ish narxi",
+          "chapter_number": "37",
+          "content": "Pudrat shartnomasi narxda ish qiymati va pudratchi sarflagan xarajatlarni qoplash, shuningdek unga tegishli haq nazarda tutiladi. Narx taqsimotda (smeta) keltirilishi mumkin. Ish narxi qat'iy yoki taxminiy bo'lishi mumkin. Taxminiy narx belgilangan hollarda pudratchi qat'iy narxdan sezilarli ravishda oshib ketishi to'g'risida buyurtmachini darhol ogohlantirishi shart.",
+          "is_mandatory": true,
+          "applies_to": ["contract", "construction"],
+          "keywords": ["narx", "smeta", "qiymat"],
+          "order": 21
+        },
+        {
+          "number": "703",
+          "title": "Haq evaziga xizmat ko'rsatish shartnomasi",
+          "chapter_number": "39",
+          "content": "Haq evaziga xizmat ko'rsatish shartnomasi bo'yicha ijrochi buyurtmachi topshirig'iga ko'ra xizmatlar ko'rsatishga (ma'lum harakatlarni amalga oshirish yoki ma'lum faoliyatni olib borish), buyurtmachi esa bu xizmatlarni to'lashga majbur. Xizmatlar aloqa, tibbiy, veterinar, audit, konsalting, axborot xizmatlari, turizm va boshqa xizmatlarni o'z ichiga oladi.",
+          "is_mandatory": true,
+          "applies_to": ["service"],
+          "keywords": ["xizmat", "ijrochi", "buyurtmachi", "to'lov"],
+          "order": 22
+        },
+        {
+          "number": "704",
+          "title": "Xizmat ko'rsatish tartibi va muddati",
+          "chapter_number": "39",
+          "content": "Agar boshqacha kelishilmagan bo'lsa, ijrochi xizmat ko'rsatishni shaxsan bajarishi shart. Buyurtmachi xizmat ko'rsatish to'g'risida ijrochidan hisobot olish huquqiga ega. Xizmat ko'rsatish muddati shartnomada belgilanadi.",
+          "is_mandatory": false,
+          "applies_to": ["service"],
+          "keywords": ["muddat", "hisobot", "ijro"],
+          "order": 23
+        }
+      ]
+    },
+    {
+      "name": "O'zbekiston Respublikasining Mehnat kodeksi",
+      "name_ru": "Трудовой кодекс Республики Узбекистан",
+      "short_name": "MK",
+      "law_type": "code",
+      "number": "ORQ-640",
+      "adoption_date": "2022-10-28",
+      "effective_date": "2023-04-30",
+      "status": "active",
+      "description": "Mehnat munosabatlarini tartibga soluvchi asosiy qonun (yangi tahrir)",
+      "source_url": "https://lex.uz/docs/6257288",
+      "chapters": [
+        {
+          "number": "3",
+          "title": "Mehnat shartnomasi",
+          "order": 1
+        },
+        {
+          "number": "4",
+          "title": "Mehnat vaqti va dam olish vaqti",
+          "order": 2
+        },
+        {
+          "number": "5",
+          "title": "Mehnat haqi",
+          "order": 3
+        }
+      ],
+      "articles": [
+        {
+          "number": "77",
+          "title": "Mehnat shartnomasi tushunchasi",
+          "chapter_number": "3",
+          "content": "Mehnat shartnomasi - bu xodim bilan ish beruvchi o'rtasidagi kelishuv bo'lib, unga muvofiq xodim belgilangan mehnat funksiyasini bajarish, ichki mehnat tartibiga rioya qilish majburiyatini, ish beruvchi esa xodimga mehnat shartnomasi bilan belgilangan ish bilan ta'minlash, mehnat sharoitlarini yaratish, mehnat haqini to'liq va o'z vaqtida to'lash majburiyatini oladi. Mehnat shartnomasi yozma shaklda tuziladi.",
+          "is_mandatory": true,
+          "applies_to": ["employment"],
+          "keywords": ["mehnat shartnomasi", "xodim", "ish beruvchi", "mehnat funksiyasi"],
+          "order": 1
+        },
+        {
+          "number": "78",
+          "title": "Mehnat shartnomasi mazmuni",
+          "chapter_number": "3",
+          "content": "Mehnat shartnomasi quyidagilarni o'z ichiga olishi shart: tomonlarning nomi va rekvizitlari; mehnat funksiyasi (lavozim, kasb, mutaxassislik); ish joyi; shartnomaning amal qilish muddati; asosiy mehnat haqi miqdori; ish vaqti va dam olish vaqti rejimi; mehnat sharoitlari; ijtimoiy sug'urta. Mehnat shartnomasi ikki nusxada tuziladi.",
+          "is_mandatory": true,
+          "applies_to": ["employment"],
+          "keywords": ["mazmun", "rekvizitlar", "mehnat haqi", "sug'urta"],
+          "order": 2
+        },
+        {
+          "number": "79",
+          "title": "Mehnat shartnomasi muddati",
+          "chapter_number": "3",
+          "content": "Mehnat shartnomasi noma'lum muddatga yoki besh yilgacha bo'lgan ma'lum muddatga (muddatli mehnat shartnomasi) tuziladi. Muddatli mehnat shartnomasi faqat quyidagi hollarda tuzilishi mumkin: ish xususiyatiga ko'ra doimiy bo'lmagan holatlar; mavsumiy ishlar; vaqtincha yo'q bo'lgan xodim o'rniga ishlash; amaliyot o'tash. Shartnoma muddati ko'rsatilmagan bo'lsa, noma'lum muddatga tuzilgan hisoblanadi.",
+          "is_mandatory": true,
+          "applies_to": ["employment"],
+          "keywords": ["muddat", "muddatli shartnoma", "noma'lum muddat"],
+          "order": 3
+        },
+        {
+          "number": "81",
+          "title": "Sinov muddati",
+          "chapter_number": "3",
+          "content": "Xodimning malakasini tekshirish maqsadida mehnat shartnomasi tuzilishida sinov muddati belgilanishi mumkin. Sinov muddati uch oydan oshmasligi kerak. Rahbar lavozimlar uchun sinov muddati olti oygacha bo'lishi mumkin. Sinov mudddati shartnomada ko'rsatilmagan bo'lsa, xodim sinovsiz ishga qabul qilingan hisoblanadi.",
+          "is_mandatory": false,
+          "applies_to": ["employment"],
+          "keywords": ["sinov muddati", "malaka", "tekshirish"],
+          "order": 4
+        },
+        {
+          "number": "95",
+          "title": "Mehnat shartnomasi bekor qilinishi",
+          "chapter_number": "3",
+          "content": "Mehnat shartnomasi quyidagi asoslarga ko'ra bekor qilinadi: tomonlar kelishuvi; shartnoma muddati tugashi; xodim tashabbusi (ikki hafta oldin yozma ogohlantirish); ish beruvchi tashabbusi (qonunda belgilangan asoslar); xodimdan bog'liq bo'lmagan holatlar. Ish beruvchi tashabbusida bekor qilish faqat qonunda belgilangan asoslar mavjud bo'lganda amalga oshiriladi.",
+          "is_mandatory": true,
+          "applies_to": ["employment"],
+          "keywords": ["bekor qilish", "tashabbusi", "ogohlantirish"],
+          "order": 5
+        },
+        {
+          "number": "133",
+          "title": "Mehnat vaqti normasi",
+          "chapter_number": "4",
+          "content": "Xodimlar uchun haftalik mehnat vaqti normasi 40 soatdan oshmasligi kerak. Ba'zi toifadagi xodimlar uchun qisqartirilgan mehnat vaqti belgilanadi: 16 yoshgacha - haftasiga 24 soat; 16-18 yosh - 36 soat; zararli sharoitlarda ishlovchilar - 36 soat. Ishning kunlik davomiyligi 8 soatdan oshmasligi kerak.",
+          "is_mandatory": true,
+          "applies_to": ["employment"],
+          "keywords": ["mehnat vaqti", "haftalik", "soat"],
+          "order": 6
+        },
+        {
+          "number": "138",
+          "title": "Ortiqcha ish",
+          "chapter_number": "4",
+          "content": "Ish beruvchi tomonidan xodimni belgilangan mehnat vaqtidan ortiq ishlashga jalb qilish ortiqcha ish hisoblanadi. Ortiqcha ishga faqat xodimning yozma roziligi bilan ruxsat etiladi. Ortiqcha ish kuniga 4 soatdan, yiliga 120 soatdan oshmasligi kerak. Ortiqcha ish kamida ikki baravar miqdorda to'lanadi.",
+          "is_mandatory": true,
+          "applies_to": ["employment"],
+          "keywords": ["ortiqcha ish", "rozilik", "ikki baravar"],
+          "order": 7
+        },
+        {
+          "number": "150",
+          "title": "Yillik mehnat ta'tili",
+          "chapter_number": "4",
+          "content": "Barcha xodimlarga har yili to'lanadigan asosiy mehnat ta'tili beriladi. Asosiy mehnat ta'tilining eng kam davomiyligi 21 kalendar kun. Zararli yoki xavfli mehnat sharoitlarida ishlovchilar, o'qituvchilar va boshqa toifadagi xodimlar uchun uzaytirilgan mehnat ta'tili belgilanadi.",
+          "is_mandatory": true,
+          "applies_to": ["employment"],
+          "keywords": ["ta'til", "yillik", "21 kun"],
+          "order": 8
+        },
+        {
+          "number": "176",
+          "title": "Mehnat haqini to'lash muddatlari",
+          "chapter_number": "5",
+          "content": "Mehnat haqi xodimga oyiga kamida ikki marta to'lanadi. Mehnat haqi to'lash kunlari ichki mehnat tartibida yoki mehnat shartnomasi, kollektiv shartnomada belgilanadi. Agar to'lov kuni dam olish yoki bayram kuniga to'g'ri kelsa, mehnat haqi shu kunning arafasida to'lanadi. Ishdan bo'shatilayotgan xodimga barcha to'lovlar so'nggi ish kuni amalga oshiriladi.",
+          "is_mandatory": true,
+          "applies_to": ["employment"],
+          "keywords": ["mehnat haqi", "to'lov", "oy", "ikki marta"],
+          "order": 9
+        },
+        {
+          "number": "177",
+          "title": "Mehnat haqining eng kam miqdori",
+          "chapter_number": "5",
+          "content": "Mehnat haqining eng kam miqdori davlat tomonidan belgilanadi va mehnat haqi shu miqdordan kam bo'lishi mumkin emas. Xodim to'liq ish vaqti ishlagan taqdirda, uning mehnat haqi eng kam mehnat haqi miqdoridan kam bo'lmasligi kerak. 2024-yilda eng kam mehnat haqi 1.050.000 so'm.",
+          "is_mandatory": true,
+          "applies_to": ["employment"],
+          "keywords": ["eng kam", "minimal", "davlat"],
+          "order": 10
+        }
+      ]
+    },
+    {
+      "name": "O'zbekiston Respublikasining Soliq kodeksi",
+      "name_ru": "Налоговый кодекс Республики Узбекистан",
+      "short_name": "SK",
+      "law_type": "code",
+      "number": "ORQ-599",
+      "adoption_date": "2019-12-30",
+      "effective_date": "2020-01-01",
+      "status": "active",
+      "description": "Soliq munosabatlarini tartibga soluvchi asosiy qonun",
+      "source_url": "https://lex.uz/docs/4674893",
+      "chapters": [
+        {
+          "number": "1",
+          "title": "Umumiy qoidalar",
+          "order": 1
+        },
+        {
+          "number": "12",
+          "title": "Foyda solig'i",
+          "order": 2
+        },
+        {
+          "number": "22",
+          "title": "QQS",
+          "order": 3
+        }
+      ],
+      "articles": [
+        {
+          "number": "18",
+          "title": "Soliq to'lovchilar",
+          "chapter_number": "1",
+          "content": "Soliq to'lovchilar tashkilotlar va jismoniy shaxslardir. Tashkilotlar - yuridik shaxslar va ularning filial va vakolatxonalari. Jismoniy shaxslar - O'zbekiston fuqarolari, xorijiy fuqarolar va fuqaroligi bo'lmagan shaxslar. Rezidentlar O'zbekistonda olingan va chet elda olingan barcha daromadlaridan soliq to'laydilar.",
+          "is_mandatory": true,
+          "applies_to": ["all"],
+          "keywords": ["soliq to'lovchi", "tashkilot", "jismoniy shaxs"],
+          "order": 1
+        },
+        {
+          "number": "337",
+          "title": "Foyda solig'i stavkasi",
+          "chapter_number": "12",
+          "content": "Foyda solig'ining asosiy stavkasi 15 foiz. Tijorat banklari va sug'urta tashkilotlari uchun stavka 20 foiz. Mobil aloqa operatorlari uchun stavka 20 foiz. Kichik biznes sub'ektlari aylanmadan 4 foiz soliq to'laydilar (soddlashtirilgan soliq).",
+          "is_mandatory": true,
+          "applies_to": ["business", "contract"],
+          "keywords": ["foyda solig'i", "15 foiz", "stavka"],
+          "order": 2
+        },
+        {
+          "number": "199",
+          "title": "QQS stavkasi",
+          "chapter_number": "22",
+          "content": "Qo'shilgan qiymat solig'i (QQS) stavkasi 12 foiz. Eksport qilinadigan tovarlar uchun 0 foiz stavka qo'llaniladi. Ayrim tovarlar va xizmatlar QQSdan ozod qilingan (tibbiy xizmatlar, ta'lim xizmatlari, moliyaviy xizmatlar). QQS hisobga olish jurnalida qayd etilishi shart.",
+          "is_mandatory": true,
+          "applies_to": ["sale", "purchase", "service"],
+          "keywords": ["QQS", "12 foiz", "eksport"],
+          "order": 3
+        }
+      ]
+    },
+    {
+      "name": "Tadbirkorlik faoliyati erkinligini kafolatlash to'g'risida",
+      "name_ru": "О гарантиях свободы предпринимательской деятельности",
+      "short_name": "TFE",
+      "law_type": "law",
+      "number": "ORQ-269",
+      "adoption_date": "2000-05-25",
+      "effective_date": "2000-05-25",
+      "status": "active",
+      "description": "Tadbirkorlik faoliyati erkinligi va kafolatlari to'g'risidagi qonun",
+      "source_url": "https://lex.uz/docs/10374",
+      "articles": [
+        {
+          "number": "3",
+          "title": "Tadbirkorlik faoliyati erkinligi",
+          "content": "Tadbirkorlik sub'ektlari qonun bilan taqiqlanmagan har qanday faoliyat turi bilan shug'ullanish huquqiga ega. Davlat tadbirkorlik faoliyatini amalga oshirishda teng huquqlar va imkoniyatlarni kafolatlaydi. Tadbirkorlik faoliyatiga noqonuniy aralashishga yo'l qo'yilmaydi.",
+          "is_mandatory": true,
+          "applies_to": ["business"],
+          "keywords": ["tadbirkorlik", "erkinlik", "kafolat"],
+          "order": 1
+        },
+        {
+          "number": "7",
+          "title": "Shartnoma erkinligi",
+          "content": "Tadbirkorlik sub'ektlari shartnoma tuzish, hamkorlarni tanlash va shartnoma shartlarini belgilashda erkindir. Shartnoma shartlari tomonlarning kelishuvi asosida belgilanadi. Davlat organlarining shartnoma shartlariga aralashishiga faqat qonunda nazarda tutilgan hollarda yo'l qo'yiladi.",
+          "is_mandatory": true,
+          "applies_to": ["business", "contract"],
+          "keywords": ["shartnoma erkinligi", "kelishuv", "tanlash"],
+          "order": 2
+        },
+        {
+          "number": "12",
+          "title": "Mulkiy huquqlar kafolatlari",
+          "content": "Tadbirkorlik sub'ektlarining mol-mulkiga daxlsizlik kafolatlanadi. Mulkni tortib olishga faqat sud qaroriga ko'ra yo'l qo'yiladi. Zarar yetkazilgan taqdirda u to'liq hajmda qoplanishi shart. Tadbirkor mol-mulkini ixtiyoriy ravishda tasarruf qilish huquqiga ega.",
+          "is_mandatory": true,
+          "applies_to": ["business", "contract"],
+          "keywords": ["mulk", "kafolat", "daxlsizlik"],
+          "order": 3
+        }
+      ]
+    },
+    {
+      "name": "Iste'molchilarning huquqlarini himoya qilish to'g'risida",
+      "name_ru": "О защите прав потребителей",
+      "short_name": "IHH",
+      "law_type": "law",
+      "number": "ORQ-221",
+      "adoption_date": "1996-04-26",
+      "effective_date": "1996-04-26",
+      "status": "active",
+      "description": "Iste'molchilar huquqlarini himoya qilish mexanizmlari",
+      "source_url": "https://lex.uz/docs/83146",
+      "articles": [
+        {
+          "number": "5",
+          "title": "Iste'molchining tovar sifatiga huquqi",
+          "content": "Iste'molchi sifatli tovar olish huquqiga ega. Sotuvchi shartnomada belgilangan va standartlarga mos sifatli tovar berishi shart. Nuqsonli tovar iste'molchiga berilgan taqdirda, u almashtirish yoki pulni qaytarishni talab qilish huquqiga ega.",
+          "is_mandatory": true,
+          "applies_to": ["retail", "sale"],
+          "keywords": ["sifat", "iste'molchi", "nuqson"],
+          "order": 1
+        },
+        {
+          "number": "10",
+          "title": "Kafolat muddati",
+          "content": "Tovar va xizmatlar uchun kafolat muddati ishlab chiqaruvchi yoki sotuvchi tomonidan belgilanadi. Kafolat muddati ichida nuqson aniqlansa, sotuvchi uni tekin tuzatishi yoki almashtirishsi shart. Kafolat muddati shartnomada ko'rsatilmagan bo'lsa, 2 yil deb hisoblanadi.",
+          "is_mandatory": true,
+          "applies_to": ["retail", "sale", "service"],
+          "keywords": ["kafolat", "muddat", "nuqson"],
+          "order": 2
+        },
+        {
+          "number": "15",
+          "title": "Tovarni qaytarish huquqi",
+          "content": "Iste'molchi sifatli tovarni sotib olingan kundan boshlab 14 kun ichida qaytarish yoki almashtirish huquqiga ega, agar tovar ishlatilmagan bo'lsa va tovar ko'rinishi saqlangan bo'lsa. Ayrim tovarlar (oziq-ovqat, dori-darmon, ichki kiyimlar) qaytarilmaydi.",
+          "is_mandatory": true,
+          "applies_to": ["retail", "sale"],
+          "keywords": ["qaytarish", "14 kun", "almashtirish"],
+          "order": 3
+        }
+      ]
+    },
+    {
+      "name": "Elektron tijorat to'g'risida",
+      "name_ru": "Об электронной коммерции",
+      "short_name": "ET",
+      "law_type": "law",
+      "number": "ORQ-385",
+      "adoption_date": "2015-05-22",
+      "effective_date": "2015-05-22",
+      "status": "active",
+      "description": "Elektron tijorat munosabatlarini tartibga soluvchi qonun",
+      "source_url": "https://lex.uz/docs/2674073",
+      "articles": [
+        {
+          "number": "8",
+          "title": "Elektron shartnoma",
+          "content": "Elektron shartnoma - bu elektron hujjat shaklida tuziladigan shartnoma. Elektron shartnoma qonunda yozma shakl talab qilinadigan shartnomalar uchun ham amal qiladi. Elektron imzo bilan tasdiqlangan shartnoma qog'oz shartnoma bilan teng kuchga ega.",
+          "is_mandatory": true,
+          "applies_to": ["e-commerce", "digital"],
+          "keywords": ["elektron shartnoma", "elektron imzo", "digital"],
+          "order": 1
+        },
+        {
+          "number": "12",
+          "title": "Xaridor huquqlari",
+          "content": "Elektron tijoratda xaridor tovar yoki xizmat to'g'risida to'liq axborot olish huquqiga ega. Sotuvchi tovar tavsifi, narxi, yetkazish shartlari va qaytarish siyosati to'g'risida axborot berishi shart. Xaridor buyurtmani tasdiqlashdan oldin barcha shartlar bilan tanishishi kerak.",
+          "is_mandatory": true,
+          "applies_to": ["e-commerce", "retail"],
+          "keywords": ["xaridor", "axborot", "elektron tijorat"],
+          "order": 2
+        },
+        {
+          "number": "15",
+          "title": "Tovarni qaytarish",
+          "content": "Masofadan sotishda xaridor tovarni qabul qilgan kundan boshlab 7 kun ichida qaytarish huquqiga ega, sababini ko'rsatmasdan. Sotuvchi pul mablag'larini 10 kun ichida qaytarishi shart. Qaytarish xarajatlarini xaridor ko'taradi, agar boshqacha kelishilmagan bo'lsa.",
+          "is_mandatory": true,
+          "applies_to": ["e-commerce"],
+          "keywords": ["qaytarish", "7 kun", "masofadan sotish"],
+          "order": 3
+        }
+      ]
+    },
+    {
+      "name": "Elektron hujjat aylanishi to'g'risida",
+      "name_ru": "Об электронном документообороте",
+      "short_name": "EHA",
+      "law_type": "law",
+      "number": "ORQ-611",
+      "adoption_date": "2004-04-29",
+      "effective_date": "2004-04-29",
+      "status": "active",
+      "description": "Elektron hujjatlar va ularning huquqiy kuchi",
+      "source_url": "https://lex.uz/docs/195013",
+      "articles": [
+        {
+          "number": "5",
+          "title": "Elektron hujjatning huquqiy kuchi",
+          "content": "Elektron raqamli imzo bilan tasdiqlangan elektron hujjat qog'oz hujjat bilan bir xil huquqiy kuchga ega. Elektron hujjat dalil sifatida sudda qabul qilinadi. Elektron hujjat asl nusxa sifatida tan olinadi.",
+          "is_mandatory": true,
+          "applies_to": ["all", "digital"],
+          "keywords": ["elektron hujjat", "huquqiy kuch", "imzo"],
+          "order": 1
+        },
+        {
+          "number": "7",
+          "title": "Elektron raqamli imzo",
+          "content": "Elektron raqamli imzo - elektron hujjatga qo'shilgan va uni yaratgan shaxsni aniqlash imkonini beruvchi ma'lumot. ERI maxsus sertifikatlash markazlari tomonidan beriladi. Malakali ERI qo'l imzosi bilan teng kuchga ega.",
+          "is_mandatory": true,
+          "applies_to": ["all", "digital"],
+          "keywords": ["ERI", "raqamli imzo", "sertifikat"],
+          "order": 2
+        }
+      ]
+    }
+  ]
+}

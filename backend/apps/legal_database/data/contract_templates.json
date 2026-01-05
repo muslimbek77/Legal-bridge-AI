@@ -1,0 +1,123 @@
+{
+  "templates": [
+    {
+      "name": "Mehnat shartnomasi",
+      "name_ru": "Трудовой договор",
+      "name_cyrillic": "Меҳнат шартномаси",
+      "contract_type": "employment",
+      "description": "Ish beruvchi va xodim o'rtasidagi mehnat munosabatlarini tartibga soluvchi shartnoma",
+      "related_laws": ["MK", "FK"],
+      "required_sections": [
+        "tomonlar",
+        "shartnoma_predmeti",
+        "mehnat_funksiyasi",
+        "mehnat_vaqti",
+        "mehnat_haqi",
+        "huquq_va_majburiyatlar",
+        "ijtimoiy_kafolatlar",
+        "shartnoma_muddati",
+        "bekor_qilish_tartibi"
+      ],
+      "is_approved": true,
+      "template_text": "MEHNAT SHARTNOMASI № ___\n\n_______________ sh.  \"___\" _____________ 20__ y.\n\n1. TOMONLAR\n\n1.1. Ish beruvchi: _________________________________ (keyingi o'rinlarda \"Ish beruvchi\" deb yuritiladi)\nManzil: _________________________________________\nSTIR: ___________________________________________\nBank: ___________________________________________\nHisob raqami: ____________________________________\n\n1.2. Xodim: ______________________________________ (keyingi o'rinlarda \"Xodim\" deb yuritiladi)\nPassport: ________________________________________\nYashash manzili: __________________________________\nJShShIR: ________________________________________\n\n2. SHARTNOMA PREDMETI\n\n2.1. Ish beruvchi Xodimni __________________________ lavozimiga ishga qabul qiladi.\n2.2. Ish joyi: _____________________________________\n2.3. Xodim o'z mehnat funksiyasini bajarishni va ichki mehnat tartibiga rioya qilishni o'z zimmasiga oladi.\n2.4. Ish beruvchi mehnat sharoitlarini yaratish va mehnat haqini to'lash majburiyatini oladi.\n\n3. MEHNAT VAQTI VA DAM OLISH VAQTI\n\n3.1. Xodimga haftalik ish vaqti - 40 soat belgilanadi.\n3.2. Ish tartibi: Dushanba-Juma, soat 9:00 dan 18:00 gacha, tushlik tanaffus 13:00-14:00.\n3.3. Dam olish kunlari: Shanba, Yakshanba.\n3.4. Xodimga yillik mehnat ta'tili - 21 kalendar kun beriladi.\n\n4. MEHNAT HAQI\n\n4.1. Xodimga oylik mehnat haqi _________________ so'm miqdorida belgilanadi.\n4.2. Mehnat haqi oyiga ikki marta to'lanadi: har oyning 5 va 20 sanalarida.\n4.3. Mehnat haqidan qonunda belgilangan soliqlar va ajratmalar ushlab qolinadi.\n4.4. Ortiqcha ish vaqti uchun ikki baravar to'lov amalga oshiriladi.\n\n5. TOMONLARNING HUQUQ VA MAJBURIYATLARI\n\n5.1. Xodimning huquqlari:\n- mehnat shartnomasi shartlarining bajarilishini talab qilish;\n- xavfsiz mehnat sharoitlarini talab qilish;\n- dam olish huquqidan foydalanish;\n- o'z huquqlarini himoya qilish.\n\n5.2. Xodimning majburiyatlari:\n- mehnat funksiyasini sifatli bajarish;\n- ichki mehnat tartibiga rioya qilish;\n- mehnat intizomiga rioya qilish;\n- tijorat sirini saqlash.\n\n5.3. Ish beruvchining huquqlari:\n- mehnat intizomini nazorat qilish;\n- rag'batlantirish va intizomiy jazo qo'llash;\n- shartnoma shartlarini bajarilishini talab qilish.\n\n5.4. Ish beruvchining majburiyatlari:\n- mehnat sharoitlarini yaratish;\n- mehnat haqini to'liq va o'z vaqtida to'lash;\n- ijtimoiy kafolatlarni ta'minlash;\n- mehnatni muhofaza qilish talablariga rioya qilish.\n\n6. IJTIMOIY KAFOLATLAR\n\n6.1. Xodim ijtimoiy sug'urta bilan ta'minlanadi.\n6.2. Xodimga qonunda belgilangan ijtimoiy kafolatlar va imtiyozlar beriladi.\n\n7. SHARTNOMA MUDDATI\n\n7.1. Ushbu shartnoma noma'lum muddatga tuzilgan.\n7.2. Shartnoma \"___\" _____________ 20__ y. dan kuchga kiradi.\n7.3. Sinov muddati - 3 (uch) oy.\n\n8. SHARTNOMANI BEKOR QILISH TARTIBI\n\n8.1. Shartnoma tomonlar kelishuvi bilan bekor qilinishi mumkin.\n8.2. Xodim tashabbusida bekor qilish - 2 hafta oldin yozma ogohlantirish.\n8.3. Ish beruvchi tashabbusida bekor qilish - Mehnat kodeksida belgilangan asoslarga ko'ra.\n\n9. YAKUNIY QOIDALAR\n\n9.1. Shartnomaga o'zgartirish kiritish yozma ravishda amalga oshiriladi.\n9.2. Nizolar muzokaralar va sud yo'li bilan hal etiladi.\n9.3. Shartnoma 2 nusxada tuzildi, har bir tomonga 1 nusxadan.\n\nTOMONLARNING IMZOLARI:\n\nIsh beruvchi:                           Xodim:\n_________________                       _________________\nM.O.                                    Sana: __________"
+    },
+    {
+      "name": "Ijara shartnomasi (ko'chmas mulk)",
+      "name_ru": "Договор аренды (недвижимость)",
+      "name_cyrillic": "Ижара шартномаси (кўчмас мулк)",
+      "contract_type": "lease",
+      "description": "Ko'chmas mulkni ijaraga berish shartnomasi",
+      "related_laws": ["FK"],
+      "required_sections": [
+        "tomonlar",
+        "ijara_predmeti",
+        "ijara_muddati",
+        "ijara_haqi",
+        "tomonlar_huquqlari",
+        "tomonlar_majburiyatlari",
+        "mulkni_qaytarish",
+        "javobgarlik"
+      ],
+      "is_approved": true,
+      "template_text": "IJARA SHARTNOMASI № ___\n\n_______________ sh.  \"___\" _____________ 20__ y.\n\n1. TOMONLAR\n\n1.1. Ijaraga beruvchi: ______________________________ (keyingi o'rinlarda \"Ijaraga beruvchi\")\nManzil: _________________________________________\nSTIR: ___________________________________________\n\n1.2. Ijarachi: ______________________________________ (keyingi o'rinlarda \"Ijarachi\")\nManzil: _________________________________________\nSTIR: ___________________________________________\n\n2. SHARTNOMA PREDMETI\n\n2.1. Ijaraga beruvchi quyidagi ko'chmas mulkni ijaraga beradi:\nOb'ekt turi: _____________________________________\nManzili: ________________________________________\nUmumiy maydoni: _____________ kv.m.\nKadastr raqami: __________________________________\n\n2.2. Mulk foydalanish maqsadi: _______________________\n2.3. Mulk ______ (yaxshi/qoniqarli) holatda topshiriladi.\n\n3. IJARA MUDDATI\n\n3.1. Ijara muddati: \"___\" __________ 20__ y. dan \"___\" __________ 20__ y. gacha.\n3.2. Muddati tugagandan keyin tomonlar shartnomani uzaytirish huquqiga ega.\n3.3. Ijarachining shartnomani uzaytirish ustunlik huquqi bor.\n\n4. IJARA HAQI VA TO'LOV TARTIBI\n\n4.1. Oylik ijara haqi: _________________ so'm (QQS ___ foiz alohida).\n4.2. To'lov har oyning ___ sanasigacha amalga oshiriladi.\n4.3. To'lov usuli: bank o'tkazmasi.\n4.4. Ijara haqi yiliga bir marta qayta ko'rib chiqilishi mumkin.\n4.5. Kommunal xizmatlar to'lovi: ________________________\n\n5. IJARAGA BERUVCHINING HUQUQ VA MAJBURIYATLARI\n\n5.1. Huquqlari:\n- ijara haqini o'z vaqtida olish;\n- mulkdan maqsadli foydalanishni nazorat qilish;\n- shartnoma shartlari buzilganda muddatidan oldin bekor qilish.\n\n5.2. Majburiyatlari:\n- mulkni shartnomada ko'rsatilgan holatda topshirish;\n- kapital ta'mirlash ishlarini bajarish;\n- mulkdan foydalanishga to'sqinlik qilmaslik.\n\n6. IJARACHINING HUQUQ VA MAJBURIYATLARI\n\n6.1. Huquqlari:\n- mulkdan shartnoma shartlariga muvofiq foydalanish;\n- zarur ta'mirlash ishlarini bajarish;\n- shartnomani uzaytirish ustunlik huquqi.\n\n6.2. Majburiyatlari:\n- ijara haqini o'z vaqtida to'lash;\n- mulkni yaxshi holatda saqlash;\n- mulkni maqsadga muvofiq ishlatish;\n- joriy ta'mirlash ishlarini bajarish;\n- shartnoma tugaganda mulkni qaytarish.\n\n7. JAVOBGARLIK\n\n7.1. Ijara haqi kechiktirilganda kunlik ___% penya to'lanadi.\n7.2. Mulkka yetkazilgan zarar to'liq qoplanadi.\n7.3. Shartnoma muddatidan oldin bekor qilinganda 1 oylik ijara haqi miqdorida jarima.\n\n8. NIZOLARNI HAL QILISH\n\n8.1. Nizolar muzokaralar yo'li bilan hal etiladi.\n8.2. Kelishuv erishilmasa, iqtisodiy sud orqali hal etiladi.\n\n9. YAKUNIY QOIDALAR\n\n9.1. Shartnoma 3 nusxada tuzildi (Ijaraga beruvchi, Ijarachi, ro'yxatdan o'tkazish uchun).\n9.2. Shartnoma davlat ro'yxatidan o'tkazilishi shart.\n9.3. Qo'shimcha kelishuvlar shartnomaning ajralmas qismi hisoblanadi.\n\nTOMONLARNING IMZOLARI:\n\nIjaraga beruvchi:                       Ijarachi:\n_________________                       _________________\nM.O.                                    M.O."
+    },
+    {
+      "name": "Oldi-sotdi shartnomasi",
+      "name_ru": "Договор купли-продажи",
+      "name_cyrillic": "Олди-сотди шартномаси",
+      "contract_type": "sale",
+      "description": "Tovarlarni sotish va sotib olish shartnomasi",
+      "related_laws": ["FK", "IHH"],
+      "required_sections": [
+        "tomonlar",
+        "shartnoma_predmeti",
+        "tovar_sifati",
+        "narx_va_tolov",
+        "yetkazish_tartibi",
+        "kafolatlar",
+        "javobgarlik"
+      ],
+      "is_approved": true,
+      "template_text": "OLDI-SOTDI SHARTNOMASI № ___\n\n_______________ sh.  \"___\" _____________ 20__ y.\n\n1. TOMONLAR\n\n1.1. Sotuvchi: _____________________________________\nManzil: _________________________________________\nSTIR: ___________________________________________\n\n1.2. Xaridor: ______________________________________\nManzil: _________________________________________\nSTIR: ___________________________________________\n\n2. SHARTNOMA PREDMETI\n\n2.1. Sotuvchi quyidagi tovar(lar)ni sotishni, Xaridor esa sotib olishni majburiyatiga oladi:\n\n| № | Tovar nomi | O'lchov birligi | Miqdori | Narxi | Jami summa |\n|---|-----------|-----------------|---------|-------|------------|\n| 1 |           |                 |         |       |            |\n| 2 |           |                 |         |       |            |\n\n2.2. Umumiy summa: _________________ so'm (_________________ so'm QQS bilan).\n\n3. TOVAR SIFATI\n\n3.1. Tovar sifati davlat standartlari va texnik shartlarga mos bo'lishi shart.\n3.2. Sertifikat va sifat hujjatlari taqdim etiladi.\n3.3. Kafolat muddati: yetkazilgan kundan boshlab ___ oy.\n\n4. NARX VA TO'LOV TARTIBI\n\n4.1. Tovar narxi shartnomaning 2-bandida ko'rsatilgan.\n4.2. To'lov tartibi: ___% oldindan to'lov, qolgan qismi yetkazilgandan keyin ___ kun ichida.\n4.3. To'lov usuli: bank o'tkazmasi.\n4.4. To'lov valyutasi: O'zbekiston so'mi.\n\n5. YETKAZISH TARTIBI\n\n5.1. Yetkazish muddati: \"___\" __________ 20__ y. gacha.\n5.2. Yetkazish joyi: _________________________________\n5.3. Yetkazish xarajatlari: ___________________________\n5.4. Tovar qabul qilib olish-topshirish dalolatnomasiga muvofiq topshiriladi.\n\n6. TOMONLAR JAVOBGARLIGI\n\n6.1. Tovar kechiktirilganda kunlik ___% penya.\n6.2. To'lov kechiktirilganda kunlik ___% penya.\n6.3. Sifatsiz tovar uchun almashtirish yoki pulni qaytarish.\n\n7. FORS-MAJOR\n\n7.1. Tabiiy ofatlar, urush va boshqa kutilmagan holatlarda tomonlar javobgarlikdan ozod qilinadi.\n7.2. Fors-major holati haqida 3 kun ichida xabar berish shart.\n\n8. NIZOLARNI HAL QILISH\n\n8.1. Nizolar muzokaralar yo'li bilan hal etiladi.\n8.2. Kelishuv erishilmasa, iqtisodiy sud orqali hal etiladi.\n\n9. YAKUNIY QOIDALAR\n\n9.1. Shartnoma ikki nusxada tuzildi.\n9.2. Shartnomaga ilovalar uning ajralmas qismidir.\n\nTOMONLARNING IMZOLARI:\n\nSotuvchi:                               Xaridor:\n_________________                       _________________\nM.O.                                    M.O."
+    },
+    {
+      "name": "Xizmat ko'rsatish shartnomasi",
+      "name_ru": "Договор оказания услуг",
+      "name_cyrillic": "Хизмат кўрсатиш шартномаси",
+      "contract_type": "service",
+      "description": "Haq evaziga xizmat ko'rsatish shartnomasi",
+      "related_laws": ["FK"],
+      "required_sections": [
+        "tomonlar",
+        "xizmat_turi",
+        "xizmat_narxi",
+        "bajarish_muddati",
+        "sifat_talablari",
+        "qabul_qilish_tartibi",
+        "javobgarlik"
+      ],
+      "is_approved": true,
+      "template_text": "XIZMAT KO'RSATISH SHARTNOMASI № ___\n\n_______________ sh.  \"___\" _____________ 20__ y.\n\n1. TOMONLAR\n\n1.1. Ijrochi: ______________________________________\nManzil: _________________________________________\nSTIR: ___________________________________________\n\n1.2. Buyurtmachi: __________________________________\nManzil: _________________________________________\nSTIR: ___________________________________________\n\n2. SHARTNOMA PREDMETI\n\n2.1. Ijrochi quyidagi xizmatlarni ko'rsatishni o'z zimmasiga oladi:\n_________________________________________________\n_________________________________________________\n\n2.2. Xizmat ko'rsatish hajmi va xususiyatlari shartnoma ilovasida belgilanadi.\n\n3. XIZMAT NARXI VA TO'LOV\n\n3.1. Xizmat ko'rsatish narxi: _________________ so'm (QQS ___ foiz alohida).\n3.2. To'lov tartibi: ________________________________\n3.3. To'lov usuli: bank o'tkazmasi.\n\n4. XIZMAT KO'RSATISH MUDDATI\n\n4.1. Boshlanish sanasi: \"___\" __________ 20__ y.\n4.2. Tugash sanasi: \"___\" __________ 20__ y.\n4.3. Oraliq muddatlar: ______________________________\n\n5. SIFAT TALABLARI\n\n5.1. Xizmatlar qonunchilik talablari va shartnoma shartlariga muvofiq ko'rsatiladi.\n5.2. Ijrochi xizmatlarni o'z kuchi va vositalari bilan bajaradi.\n5.3. Sifat kafolati: _________________________________\n\n6. XIZMATLARNI QABUL QILISH\n\n6.1. Xizmatlar qabul qilish-topshirish dalolatnomasiga muvofiq qabul qilinadi.\n6.2. Buyurtmachi xizmatlarni ___ kun ichida ko'rib chiqadi.\n6.3. Kamchiliklar aniqlansa, ___ kun ichida tuzatiladi.\n\n7. TOMONLAR JAVOBGARLIGI\n\n7.1. Xizmat ko'rsatish kechiktirilganda kunlik ___% penya.\n7.2. To'lov kechiktirilganda kunlik ___% penya.\n7.3. Sifatsiz xizmat uchun qayta bajarish yoki pulni qaytarish.\n\n8. MAXFIYLIK\n\n8.1. Tomonlar shartnoma ijrosi davomida olgan ma'lumotlarni maxfiy saqlaydi.\n8.2. Maxfiylik majburiyati shartnoma tugaganidan keyin ___ yil davom etadi.\n\n9. YAKUNIY QOIDALAR\n\n9.1. Shartnoma imzolangan kundan kuchga kiradi.\n9.2. Shartnoma ikki nusxada tuzildi.\n\nTOMONLARNING IMZOLARI:\n\nIjrochi:                                Buyurtmachi:\n_________________                       _________________\nM.O.                                    M.O."
+    },
+    {
+      "name": "Pudrat shartnomasi",
+      "name_ru": "Договор подряда",
+      "name_cyrillic": "Пудрат шартномаси",
+      "contract_type": "contract",
+      "description": "Ish bajarish (qurilish, ta'mirlash va boshqalar) shartnomasi",
+      "related_laws": ["FK"],
+      "required_sections": [
+        "tomonlar",
+        "ish_mazmuni",
+        "muddat",
+        "narx_va_smeta",
+        "materiallar",
+        "nazorat",
+        "qabul_qilish",
+        "kafolatlar",
+        "javobgarlik"
+      ],
+      "is_approved": true,
+      "template_text": "PUDRAT SHARTNOMASI № ___\n\n_______________ sh.  \"___\" _____________ 20__ y.\n\n1. TOMONLAR\n\n1.1. Pudratchi: ____________________________________\nManzil: _________________________________________\nSTIR: ___________________________________________\nLitsenziya: ______________________________________\n\n1.2. Buyurtmachi: __________________________________\nManzil: _________________________________________\nSTIR: ___________________________________________\n\n2. SHARTNOMA PREDMETI\n\n2.1. Pudratchi quyidagi ishlarni bajarishni o'z zimmasiga oladi:\n_________________________________________________\n_________________________________________________\n\n2.2. Ob'ekt manzili: ________________________________\n2.3. Ish hajmi smeta hujjatlarida belgilanadi.\n\n3. ISH MUDDATLARI\n\n3.1. Ishni boshlash: \"___\" __________ 20__ y.\n3.2. Ishni tugatish: \"___\" __________ 20__ y.\n3.3. Ish bosqichlari va kalendar grafik ilova qilinadi.\n\n4. SHARTNOMA NARXI\n\n4.1. Shartnoma narxi: _________________ so'm.\n4.2. Narx tarkibi: ishchi kuchi, materiallar, transport, ustama xarajatlar, foyda.\n4.3. Smeta shartnomaga ilova qilinadi.\n4.4. Narx qat'iy/taxminiy (kerakli ta'kidlansin).\n\n5. TO'LOV TARTIBI\n\n5.1. Avans: ___% - shartnoma imzolanganda.\n5.2. Oraliq to'lovlar: bajarilgan ishlar uchun har oyda.\n5.3. Yakuniy to'lov: ish qabul qilingandan keyin ___ kun ichida.\n\n6. MATERIALLAR VA JIHOZLAR\n\n6.1. Materiallar _________________________ tomonidan ta'minlanadi.\n6.2. Material sifati standartlarga mos bo'lishi shart.\n6.3. Ortiqcha materiallar buyurtmachiga qaytariladi.\n\n7. ISHNI QABUL QILISH\n\n7.1. Ish qabul qilish komissiyasi tomonidan qabul qilinadi.\n7.2. Qabul qilish dalolatnomasiga muvofiq rasmiylashtiriladi.\n7.3. Kamchiliklar topilsa, tuzatish muddati belgilanadi.\n\n8. KAFOLATLAR\n\n8.1. Kafolat muddati: ish qabul qilingan kundan boshlab ___ yil.\n8.2. Kafolat davrida aniqlangan nuqsonlar pudratchi hisobiga tuzatiladi.\n\n9. JAVOBGARLIK\n\n9.1. Ish kechiktirilganda kunlik ___% penya.\n9.2. To'lov kechiktirilganda kunlik ___% penya.\n9.3. Sifatsiz ish uchun tuzatish yoki zararni qoplash.\n\n10. FORS-MAJOR\n\n10.1. Fors-major holatlarida tomonlar javobgarlikdan ozod qilinadi.\n10.2. Fors-major haqida 5 kun ichida xabar berish shart.\n\nTOMONLARNING IMZOLARI:\n\nPudratchi:                              Buyurtmachi:\n_________________                       _________________\nM.O.                                    M.O."
+    },
+    {
+      "name": "Yetkazib berish shartnomasi",
+      "name_ru": "Договор поставки",
+      "name_cyrillic": "Етказиб бериш шартномаси",
+      "contract_type": "supply",
+      "description": "Tovarlarni muntazam yetkazib berish shartnomasi",
+      "related_laws": ["FK"],
+      "required_sections": [
+        "tomonlar",
+        "tovar_nomenklaturasi",
+        "yetkazish_grafigi",
+        "narx_belgilash",
+        "sifat_talablari",
+        "qabul_qilish_tartibi",
+        "javobgarlik"
+      ],
+      "is_approved": true,
+      "template_text": "YETKAZIB BERISH SHARTNOMASI № ___\n\n_______________ sh.  \"___\" _____________ 20__ y.\n\n1. TOMONLAR\n\n1.1. Yetkazib beruvchi: _____________________________\n1.2. Xaridor: ______________________________________\n\n2. SHARTNOMA PREDMETI\n\n2.1. Yetkazib beruvchi quyidagi tovarlarni muntazam yetkazib berishni o'z zimmasiga oladi:\n(Tovarlar ro'yxati ilova qilinadi)\n\n2.2. Yetkazish davri: har oy/har hafta/buyurtmaga ko'ra.\n2.3. Shartnoma amal qilish muddati: 1 yil.\n\n3. YETKAZISH TARTIBI\n\n3.1. Yetkazish joyi: ________________________________\n3.2. Yetkazish muddati: buyurtmadan keyin ___ kun.\n3.3. Minimal buyurtma hajmi: _______________________\n\n4. NARX VA TO'LOV\n\n4.1. Narxlar ilovada ko'rsatilgan.\n4.2. To'lov muddati: tovar qabul qilinganidan keyin ___ kun.\n4.3. To'lov usuli: bank o'tkazmasi.\n\n5. SIFAT VA KAFOLAT\n\n5.1. Tovar sifati standartlarga mos bo'lishi shart.\n5.2. Sifat sertifikatlari taqdim etiladi.\n5.3. Kafolat muddati: ___ oy.\n\n6. JAVOBGARLIK\n\n6.1. Yetkazish kechiktirilganda - kunlik ___% penya.\n6.2. To'lov kechiktirilganda - kunlik ___% penya.\n\nTOMONLARNING IMZOLARI:\n\nYetkazib beruvchi:                      Xaridor:\n_________________                       _________________"
+    }
+  ]
+}
