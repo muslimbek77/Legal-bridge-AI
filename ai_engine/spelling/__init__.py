@@ -6,6 +6,7 @@ Supports Uzbek (Latin & Cyrillic) and Russian languages.
 import os
 import re
 import logging
+import difflib
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 from enum import Enum
@@ -42,6 +43,32 @@ class SpellingChecker:
     Spelling checker for Uzbek (Latin & Cyrillic) and Russian.
     """
     
+    # Whitelist of words to ignore (Legal terms, abbreviations, etc.)
+    WHITELIST_WORDS = {
+        'mchj', 'aj', 'xk', 'qk', 'ok', 'yatt', 'f.i.sh.', 'v.b.', 'k.k.', 't.y.',
+        'sh.', 't.', 'r.', 'vil.', 'resp.', 'tel.', 'faks', 'e-mail',
+        'inn', 'mfo', 'h/r', 'sh/h', 'pasport', 'seriya', 'raqam',
+        'direktor', 'boshliq', 'rahbar', 'hisobchi', 'yurist',
+        'shartnoma', 'buyurtmachi', 'pudratchi', 'ijrochi', 'tomonlar',
+        'bank', 'filial', 'valyuta', 'summa', 'to\'lov', 'muddat',
+        'foiz', 'jarima', 'penya', 'kafolat', 'akt', 'dalolatnoma',
+        'ilova', 'modda', 'band', 'qism', 'bob', 'bo\'lim',
+        
+        # Common Cyrillic Legal Terms (Whitelist)
+        'мчж', 'аж', 'хк', 'қк', 'якка', 'тартибдаги', 'тадбиркор',
+        'ф.и.ш.', 'в.б.', 'к.к.', 'т.й.', 'ш.', 'т.', 'р.', 'вил.', 'респ.',
+        'инн', 'мфо', 'ҳ/р', 'ш/ҳ', 'паспорт', 'серия', 'рақам',
+        'директор', 'бошлиқ', 'раҳбар', 'ҳисобчи', 'юрист',
+        'шартнома', 'буюртмачи', 'пудратчи', 'ижрочи', 'томонлар',
+        'банк', 'филиал', 'валюта', 'сумма', 'тўлов', 'муддат',
+        'фоиз', 'жарима', 'пеня', 'кафолат', 'акт', 'далолатнома',
+        'илова', 'модда', 'банд', 'қисм', 'боб', 'бўлим',
+        'автомобил', 'автотранспорт', 'транспорт', 'қурилиш', 'бино', 'иншоот',
+        'йўл', 'кўприк', 'сув', 'газ', 'электр', 'энергия',
+        'президент', 'вазир', 'ҳоким', 'қўмита', 'агентлик',
+        'республика', 'вилоят', 'туман', 'шаҳар', 'қишлоқ', 'маҳалла',
+    }
+
     # Words that should start with 'h' not 'x' (comprehensive list)
     H_WORDS = [
         'hozir', 'hozirgi', 'hozirda', 'hozircha', 'hozirlik',
@@ -108,10 +135,164 @@ class SpellingChecker:
         
         # Countries/Places
         "o'zbekiston", 'uzbekistan', 'toshkent', 'samarqand', 'buxoro',
+        
+        # Legal Terms & Abbreviations (Whitelist)
+        'mchj', 'aj', 'xk', 'qk', 'ok', 'yatt', 'f.i.sh.', 'v.b.', 'k.k.', 't.y.',
+        'sh.', 't.', 'r.', 'vil.', 'resp.', 'tel.', 'faks', 'e-mail',
+        'inn', 'mfo', 'h/r', 'sh/h', 'pasport', 'seriya', 'raqam',
+        'direktor', 'boshliq', 'rahbar', 'hisobchi', 'yurist',
+        'shartnoma', 'buyurtmachi', 'pudratchi', 'ijrochi', 'tomonlar',
+        'bank', 'filial', 'valyuta', 'summa', 'to\'lov', 'muddat',
+        'foiz', 'jarima', 'penya', 'kafolat', 'akt', 'dalolatnoma',
+        'ilova', 'modda', 'band', 'qism', 'bob', 'bo\'lim',
+        
+        # Common Cyrillic Legal Terms (Whitelist)
+        'мчж', 'аж', 'хк', 'қк', 'якка', 'тартибдаги', 'тадбиркор',
+        'ф.и.ш.', 'в.б.', 'к.к.', 'т.й.', 'ш.', 'т.', 'р.', 'вил.', 'респ.',
+        'инн', 'мфо', 'ҳ/р', 'ш/ҳ', 'паспорт', 'серия', 'рақам',
+        'директор', 'бошлиқ', 'раҳбар', 'ҳисобчи', 'юрист',
+        'шартнома', 'буюртмачи', 'пудратчи', 'ижрочи', 'томонлар',
+        'банк', 'филиал', 'валюта', 'сумма', 'тўлов', 'муддат',
+        'фоиз', 'жарима', 'пеня', 'кафолат', 'акт', 'далолатнома',
+        'илова', 'модда', 'банд', 'қисм', 'боб', 'бўлим',
+        'автомобил', 'автотранспорт', 'транспорт', 'қурилиш', 'бино', 'иншоот',
+        'йўл', 'кўприк', 'сув', 'газ', 'электр', 'энергия',
+        'президент', 'вазир', 'ҳоким', 'қўмита', 'агентлик',
+        'республика', 'вилоят', 'туман', 'шаҳар', 'қишлоқ', 'маҳалла',
     }
     
     # Common spelling mistakes in Uzbek (wrong -> correct) - expanded
     UZBEK_CORRECTIONS = {
+        # Common Cyrillic Typos (k -> q, u -> o', h -> x/h)
+        'конуни': 'қонуни',
+        'конун': 'қонун',
+        'карор': 'қарор',
+        'кисмида': 'қисмида',
+        'кисм': 'қисм',
+        'куриш': 'қуриш',
+        'килиш': 'қилиш',
+        'килиб': 'қилиб',
+        'килади': 'қилади',
+        'килинган': 'қилинган',
+        'килинади': 'қилинади',
+        'кизиқиш': 'қизиқиш',
+        'киска': 'қисқа',
+        'кишлок': 'қишлоқ',
+        'кабул': 'қабул',
+        'кандай': 'қандай',
+        'качон': 'қачон',
+        'каерда': 'қаерда',
+        'канча': 'қанча',
+        'кайси': 'қайси',
+        'кайтиш': 'қайтиш',
+        'кайта': 'қайта',
+        'кайд': 'қайд',
+        'карз': 'қарз',
+        'кадр': 'қадр',
+        'кадам': 'қадам',
+        'калам': 'қалам',
+        'калит': 'калит', # Correct
+        'камар': 'камар', # Correct
+        'канот': 'қанот',
+        'кават': 'қават',
+        'катор': 'қатор',
+        'катик': 'қатиқ',
+        'каттик': 'қаттиқ',
+        'кахрамон': 'қаҳрамон',
+        
+        'узбекистон': 'ўзбекистон',
+        'узбек': 'ўзбек',
+        'узи': 'ўзи',
+        'уз': 'ўз',
+        'урнида': 'ўрнида',
+        'урнатиш': 'ўрнатиш',
+        'урта': 'ўрта',
+        'укув': 'ўқув',
+        'укиш': 'ўқиш',
+        'укитувчи': 'ўқитувчи',
+        'уқувчи': 'ўқувчи',
+        'улка': 'ўлка',
+        'улим': 'ўлим',
+        'улик': 'ўлик',
+        'утин': 'ўтин',
+        'утмиш': 'ўтмиш',
+        'утиш': 'ўтиш',
+        'утказиш': 'ўтказиш',
+        'узгариш': 'ўзгариш',
+        'узгартириш': 'ўзгартириш',
+        'ухшаш': 'ўхшаш',
+        'уйлаш': 'ўйлаш',
+        'уйин': 'ўйин',
+        'уй': 'уй', # Correct
+        'ун': 'ун', # Correct
+        
+        'хамда': 'ҳамда',
+        'хам': 'ҳам',
+        'хар': 'ҳар',
+        'хисоб': 'ҳисоб',
+        'хукумат': 'ҳукумат',
+        'хуқуқ': 'ҳуқуқ',
+        'хужжат': 'ҳужжат',
+        'хаёт': 'ҳаёт',
+        'хозир': 'ҳозир',
+        'холат': 'ҳолат',
+        'химоя': 'ҳимоя',
+        'хурмат': 'ҳурмат',
+        'хақиқат': 'ҳақиқат',
+        'хақ': 'ҳақ',
+        'хамма': 'ҳамма',
+        'хабар': 'хабар', # Correct (xabar)
+        'хавф': 'хавф', # Correct
+        'хато': 'хато', # Correct
+        'хизмат': 'хизмат', # Correct
+        
+        'шахри': 'шаҳри',
+        'шахар': 'шаҳар',
+        'махкама': 'маҳкама',
+        'махсус': 'махсус', # Correct
+        'махалла': 'маҳалла',
+        'рахбар': 'раҳбар',
+        'рахмат': 'раҳмат',
+        'мехнат': 'меҳнат',
+        'мухим': 'муҳим',
+        'мухр': 'муҳр',
+        'мухлат': 'муҳлат',
+        'сухбат': 'суҳбат',
+        'сахфа': 'саҳифа',
+        'бахт': 'бахт', # Correct
+        'бахс': 'баҳс',
+        'бахор': 'баҳор',
+        'бахо': 'баҳо',
+        
+        'призидент': 'президент',
+        'призидентининг': 'президентининг',
+        'республикаси': 'республикаси',
+        'вазирлар': 'вазирлар',
+        'маҳкамаси': 'маҳкамаси',
+        'тошкент': 'тошкент',
+        'вилояти': 'вилояти',
+        'тумани': 'тумани',
+        'шаҳри': 'шаҳри',
+        
+        'сентабр': 'сентябрь',
+        'сентабрдаги': 'сентябрдаги',
+        'октабр': 'октябрь',
+        'ноябр': 'ноябрь',
+        'декабр': 'декабрь',
+        'январ': 'январь',
+        'феврал': 'февраль',
+        'апрел': 'апрель',
+        'июн': 'июнь',
+        'июл': 'июль',
+        
+        'автойули': 'автойўли',
+        'йули': 'йўли',
+        'йул': 'йўл',
+        'йуловчи': 'йўловчи',
+        'йулак': 'йўлак',
+        'йук': 'йўқ', # or yuk (load) - context dependent, but usually yo'q/yuk
+        'йуқ': 'йўқ',
+        
         # X vs H confusion (comprehensive - all forms)
         'xisoblanadi': 'hisoblanadi',
         'xisoblash': 'hisoblash',
@@ -511,97 +692,22 @@ class SpellingChecker:
     
     def check_text(self, text: str, language: str = 'uz-latn') -> List[SpellingError]:
         """
-        Har bir so'zni avto-detect qilib, uzspell (lotin/kirill) yoki Yandex (ruscha) backenddan natija oladi.
-        """
-        errors: List[SpellingError] = []
-        lines = text.split('\n')
-        position = 0
-        for line_num, line in enumerate(lines, 1):
-            for word, word_pos in self._extract_words(line):
-                # Avto-detect: ruscha harflar bo'lsa 'ru', kirill bo'lsa 'uz-cyrl', lotin bo'lsa 'uz-latn'
-                if re.search(r'[а-яА-ЯёЁ]', word):
-                    lang = 'ru'
-                elif re.search(r'[\u0400-\u04FF]', word):
-                    lang = 'uz-cyrl'
-                else:
-                    lang = 'uz-latn'
-                suggestion = None
-                correct = True
-                # Ruscha: Yandex Speller
-                if lang == 'ru' and self._external:
-                    res = self._external.backends[1].check(word, lang)  # YandexSpellerBackend
-                    correct = res.correct
-                    suggestion = res.suggestion
-                # O'zbek lotin/kirill: uzspell
-                elif lang.startswith('uz') and self._external:
-                    res = self._external.backends[0].check(word, lang)  # UzSpellBackend
-                    correct = res.correct
-                    suggestion = res.suggestion
-                if not correct and suggestion:
-                    errors.append(SpellingError(
-                        word=word,
-                        suggestion=suggestion,
-                        error_type=SpellingErrorType.TYPO,
-                        position=position + word_pos,
-                        line_number=line_num,
-                        context=self._get_context(line, word_pos, word),
-                        language=lang,
-                        description=f"Imloviy xato: '{word}' → '{suggestion}'"
-                    ))
-            position += len(line) + 1
-        return errors
-        """
         Check text for spelling errors.
         
         Args:
             text: Text to check
-            language: Language code ('uz-latn', 'uz-cyrl', 'ru')
+            language: Document language code ('uz-latn', 'uz-cyrl', 'ru')
             
         Returns:
             List of SpellingError objects
         """
-        # Har bir so'zni ruscha bo'lsa Yandex, o'zbek lotin/kirill bo'lsa uzspell orqali tekshir
         errors: List[SpellingError] = []
-        lines = text.split('\n')
-        position = 0
-        for line_num, line in enumerate(lines, 1):
-            for word, word_pos in self._extract_words(line):
-                lang = language
-                # Avto-detect: ruscha harflar bo'lsa 'ru', kirill bo'lsa 'uz-cyrl', lotin bo'lsa 'uz-latn'
-                if re.search(r'[а-яА-ЯёЁ]', word):
-                    lang = 'ru'
-                elif re.search(r'[\u0400-\u04FF]', word):
-                    lang = 'uz-cyrl'
-                else:
-                    lang = 'uz-latn'
-                suggestion = None
-                correct = True
-                # Ruscha: Yandex Speller
-                if lang == 'ru' and self._external:
-                    res = self._external.backends[1].check(word, lang)  # YandexSpellerBackend
-                    correct = res.correct
-                    suggestion = res.suggestion
-                # O'zbek lotin/kirill: uzspell
-                elif lang.startswith('uz') and self._external:
-                    res = self._external.backends[0].check(word, lang)  # UzSpellBackend
-                    correct = res.correct
-                    suggestion = res.suggestion
-                if not correct and suggestion:
-                    errors.append(SpellingError(
-                        word=word,
-                        suggestion=suggestion,
-                        error_type=SpellingErrorType.TYPO,
-                        position=position + word_pos,
-                        line_number=line_num,
-                        context=self._get_context(line, word_pos, word),
-                        language=lang,
-                        description=f"Imloviy xato: '{word}' → '{suggestion}'"
-                    ))
-            position += len(line) + 1
-        return errors
-
-        errors = []
         seen_errors = set()
+
+        # Pre-compile regex for language detection
+        cyrillic_pattern = re.compile(r'[\u0400-\u04FF]')
+        uzbek_specific = re.compile(r'[ғқҳўҒҚҲЎ]')
+        russian_specific = re.compile(r'[ыщЫЩ]')
 
         def emit_error(word: str, suggestion: str, error_type: SpellingErrorType, position: int,
                        line_number: int, context: str, language: str, description: str) -> bool:
@@ -631,6 +737,28 @@ class SpellingChecker:
             words = self._extract_words(line)
             
             for word, word_pos in words:
+                # Determine language for this specific word
+                word_lang = language
+                is_cyrillic = bool(cyrillic_pattern.search(word))
+                
+                if is_cyrillic:
+                    if uzbek_specific.search(word):
+                        word_lang = 'uz-cyrl'
+                    elif russian_specific.search(word):
+                        word_lang = 'ru'
+                    else:
+                        # Ambiguous Cyrillic word
+                        if language == 'uz-cyrl':
+                            word_lang = 'uz-cyrl'
+                        elif language == 'ru':
+                            word_lang = 'ru'
+                        else:
+                            # Default to Uzbek Cyrillic as it's the primary language context
+                            word_lang = 'uz-cyrl'
+                else:
+                    # Latin script
+                    word_lang = 'uz-latn'
+
                 word_lower = word.lower()
                 error_found = False
                 position_index = position + word_pos
@@ -639,6 +767,12 @@ class SpellingChecker:
                 # 1. Check for known misspellings first
                 if word_lower in self.all_corrections:
                     correction = self.all_corrections[word_lower]
+                    
+                    # Skip if correction is identical to word (case-insensitive)
+                    # This prevents false positives where the dictionary maps a word to itself
+                    if correction.lower() == word_lower:
+                        continue
+
                     # Preserve original case
                     if word.isupper():
                         correction = correction.upper()
@@ -654,7 +788,7 @@ class SpellingChecker:
                         position=position_index,
                         line_number=line_num,
                         context=context,
-                        language=language,
+                        language=word_lang,
                         description=self._get_error_description(error_type, word, correction)
                     )
                     error_found = True
@@ -676,7 +810,7 @@ class SpellingChecker:
                             position=position_index,
                             line_number=line_num,
                             context=context,
-                            language=language,
+                            language=word_lang,
                             description=f"'x' o'rniga 'h' bo'lishi kerak: '{word}' → '{correction}'"
                         )
                         error_found = True
@@ -692,7 +826,6 @@ class SpellingChecker:
                         line_number=line_num,
                         context=context,
                         language='uz-latn',
-                        # Use double quotes around the apostrophe to avoid breaking the f-string quoting
                         description="Tutuq belgisi noto'g'ri: '`' o'rniga \"'\" ishlatilishi kerak"
                     )
                     error_found = True
@@ -775,8 +908,43 @@ class SpellingChecker:
 
                 # 6. External backends (Hunspell/LanguageTool) for generic typos
                 if not error_found and self._should_external_check(word):
-                    suggestion = self._external_suggest(word, language)
+                    # Skip all-uppercase words (likely acronyms)
+                    if word.isupper():
+                        continue
+
+                    # Skip likely surnames (capitalized and ends with common suffixes)
+                    surname_suffixes = (
+                        'ov', 'ev', 'ova', 'eva', 'vich', 'ovna', 'evna', 'zoda', 'iy',  # Latin
+                        'ов', 'ев', 'ова', 'ева', 'вич', 'овна', 'евна', 'зода', 'ий'    # Cyrillic
+                    )
+                    if word[0].isupper() and word.lower().endswith(surname_suffixes):
+                        continue
+
+                    # Skip whitelisted legal terms and abbreviations
+                    if word.lower() in self.WHITELIST_WORDS:
+                        continue
+
+                    suggestion = self._external_suggest(word, word_lang)
                     if suggestion is not None and suggestion.lower() != word_lower:
+                        # For capitalized words (potential proper nouns), be conservative
+                        if word[0].isupper():
+                            # Calculate similarity ratio
+                            ratio = difflib.SequenceMatcher(None, word, suggestion).ratio()
+                            
+                            # If similarity is low (< 0.85), assume it's a proper noun we don't know
+                            # This filters out "Кўприкқурилиш" -> "Кўпиртирилиш" (0.8)
+                            # and "Мухаммадиев" -> "Муҳаммадий" (0.76)
+                            if ratio < 0.85:
+                                continue
+                            
+                            # If the suggestion changes the first letter (and it's not a common X/H swap), skip it
+                            # This prevents changing names like "Temur" to "Lemur" (hypothetically)
+                            if word[0].lower() != suggestion[0].lower():
+                                # Exception for X/H swap which is common in Uzbek
+                                if not ({word[0].lower(), suggestion[0].lower()} == {'x', 'h'} or 
+                                        {word[0].lower(), suggestion[0].lower()} == {'х', 'ҳ'}):
+                                    continue
+
                         emit_error(
                             word=word,
                             suggestion=self._preserve_case(word, suggestion),
@@ -784,7 +952,7 @@ class SpellingChecker:
                             position=position_index,
                             line_number=line_num,
                             context=context,
-                            language=language,
+                            language=word_lang,
                             description=f"Imloviy xato: '{word}' → '{suggestion}'"
                         )
                         error_found = True

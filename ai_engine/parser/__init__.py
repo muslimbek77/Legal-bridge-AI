@@ -75,6 +75,7 @@ class ContractMetadata:
     start_date: Optional[str] = None
     end_date: Optional[str] = None
     language: str = "uz-latn"
+    language_distribution: Dict[str, float] = field(default_factory=dict)
 
 
 class ContractParser:
@@ -787,7 +788,9 @@ class ContractParser:
             metadata.currency = 'UZS'
         
         # Detect language
-        metadata.language = self._detect_language(text)
+        lang, lang_dist = self._detect_language(text)
+        metadata.language = lang
+        metadata.language_distribution = lang_dist
         
         if not metadata.party_a_name:
             metadata.party_a_name = self._extract_party(text, 'party_a_name')
@@ -878,70 +881,93 @@ class ContractParser:
         logger.info(f"[PARTY_EXTRACT] {field} - NO MATCH")
         return None
     
-    def _detect_language(self, text: str) -> str:
-        """Detect contract language: Russian, Uzbek Cyrillic, or Latin."""
+    def _detect_language(self, text: str) -> Tuple[str, Dict[str, float]]:
+        """
+        Detect contract language and distribution.
+        Returns (dominant_language, distribution_dict).
+        """
         import logging
         logger = logging.getLogger(__name__)
         
-        # Priority check: look for "Договор" in first 2000 chars (strong Russian marker)
-        if re.search(r'(?i)\bДоговор\b', text[:2000]):
-            logger.info("[LANG_DETECT] RETURNING: ru (found 'Договор' keyword)")
-            return 'ru'
+        total_chars = len(text)
+        if total_chars == 0:
+            return 'uz-latn', {'uz-latn': 1.0}
+
+        # Character sets
+        cyrillic_chars = set('абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ')
+        latin_chars = set('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
         
-        cyrillic = set('абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ')
-        russian_specific = set('ъыэё')
-        uzbek_specific = set("ғҳқўшчђҷ")
+        # Specific indicators
+        uzbek_cyrillic_specific = set("ғҳқўҒҚҲЎ") 
+        russian_specific = set('ыщЫЩ')
+        uzbek_latin_specific = set("o'g'shch") # Hard to detect single chars, rely on words
         
-        cyrillic_count = sum(1 for c in text if c in cyrillic)
-        russian_count = sum(1 for c in text if c in russian_specific)
-        uzbek_indicator = sum(1 for c in text if c in uzbek_specific)
-        total_letters = sum(1 for c in text if c.isalpha())
+        # Counts
+        cyrillic_count = sum(1 for c in text if c in cyrillic_chars)
+        latin_count = sum(1 for c in text if c in latin_chars)
+        total_letters = cyrillic_count + latin_count
         
         if total_letters == 0:
-            return 'uz-latn'
-        
+            return 'uz-latn', {'uz-latn': 1.0}
+
+        # Script ratios
         cyrillic_ratio = cyrillic_count / total_letters
+        latin_ratio = latin_count / total_letters
         
-        logger.info(f"[LANG_DETECT] cyrillic_count={cyrillic_count}, russian_count={russian_count}, uzbek_indicator={uzbek_indicator}, total_letters={total_letters}, cyrillic_ratio={cyrillic_ratio:.2%}")
+        distribution = {
+            'uz-latn': 0.0,
+            'uz-cyrl': 0.0,
+            'ru': 0.0
+        }
+        
+        dominant_lang = 'uz-latn'
         
         if cyrillic_ratio > 0.5:
-            # If Uzbek-specific letters dominate, prefer Uzbek Cyrillic even when Russian letters exist
-            if uzbek_indicator >= 5 and uzbek_indicator >= max(1, russian_count // 2):
-                logger.info(f"[LANG_DETECT] RETURNING: uz-cyrl (uzbek chars dominate: uzbek_indicator={uzbek_indicator}, russian_count={russian_count})")
-                return 'uz-cyrl'
-
-            # Check for Russian-specific words
-            russian_words = ['договор', 'поставщик', 'исполнитель', 'заказчик', 'покупатель', 'условиях', 'расчетов']
-            russian_word_count = sum(1 for word in russian_words if word in text.lower())
+            # It's Cyrillic script. Distinguish between Russian and Uzbek Cyrillic.
             
-            logger.info(f"[LANG_DETECT] russian_word_count={russian_word_count}, words found: {[w for w in russian_words if w in text.lower()]}")
+            # 1. Check specific characters
+            uz_spec_count = sum(1 for c in text if c in "ғқҳўҒҚҲЎ")
+            ru_spec_count = sum(1 for c in text if c in "ыщЫЩ") # Only truly unique Russian chars
             
-            # If Russian-specific characters detected, it's Russian
-            if russian_count >= 5:
-                logger.info(f"[LANG_DETECT] RETURNING: ru (has russian_specific chars: russian_count={russian_count})")
-                return 'ru'
+            # 2. Check common words (more reliable)
+            text_lower = text.lower()
+            ru_words = ['договор', 'что', 'для', 'или', 'как', 'все', 'так', 'его', 'при', 'быть']
+            uz_words = ['шартнома', 'билан', 'учун', 'ёки', 'ҳам', 'бўлиб', 'эди', 'шу', 'бу']
             
-            # If Russian-specific words detected (high confidence), it's Russian
-            if russian_word_count >= 5:
-                logger.info(f"[LANG_DETECT] RETURNING: ru (has many russian_words: russian_word_count={russian_word_count})")
-                return 'ru'
+            ru_word_count = sum(1 for w in ru_words if re.search(r'\b' + w + r'\b', text_lower))
+            uz_word_count = sum(1 for w in uz_words if re.search(r'\b' + w + r'\b', text_lower))
             
-            # If some Russian words and no Uzbek characters, it's Russian
-            if russian_word_count >= 2 and uzbek_indicator == 0:
-                logger.info(f"[LANG_DETECT] RETURNING: ru (russian_words + no uzbek chars)")
-                return 'ru'
+            # Calculate internal Cyrillic distribution
+            total_markers = uz_spec_count + ru_spec_count + ru_word_count + uz_word_count
             
-            # If Uzbek-specific letters present, prefer Uzbek Cyrillic (mixed contracts)
-            if uzbek_indicator >= 1:
-                logger.info(f"[LANG_DETECT] RETURNING: uz-cyrl (uzbek_indicator={uzbek_indicator})")
-                return 'uz-cyrl'
+            if total_markers > 0:
+                uz_score = (uz_spec_count * 2 + uz_word_count)
+                ru_score = (ru_spec_count * 2 + ru_word_count)
+                
+                if uz_score > ru_score:
+                    dominant_lang = 'uz-cyrl'
+                    distribution['uz-cyrl'] = cyrillic_ratio * (uz_score / (uz_score + ru_score))
+                    distribution['ru'] = cyrillic_ratio * (ru_score / (uz_score + ru_score))
+                else:
+                    dominant_lang = 'ru'
+                    distribution['ru'] = cyrillic_ratio * (ru_score / (uz_score + ru_score))
+                    distribution['uz-cyrl'] = cyrillic_ratio * (uz_score / (uz_score + ru_score))
+            else:
+                # Fallback if no markers found (rare)
+                dominant_lang = 'ru' if ru_spec_count > uz_spec_count else 'uz-cyrl'
+                distribution[dominant_lang] = cyrillic_ratio
+                
+            distribution['uz-latn'] = latin_ratio
             
-            # Default to Uzbek Cyrillic for ambiguous Cyrillic text
-            logger.info(f"[LANG_DETECT] RETURNING: uz-cyrl (default for ambiguous)")
-            return 'uz-cyrl'
-        
-        logger.info(f"[LANG_DETECT] RETURNING: uz-latn (cyrillic_ratio too low)")
-        return 'uz-latn'
+        else:
+            # It's Latin script. Assume Uzbek Latin (English is rare in this context)
+            dominant_lang = 'uz-latn'
+            distribution['uz-latn'] = latin_ratio
+            distribution['uz-cyrl'] = cyrillic_ratio / 2 # Rough estimate
+            distribution['ru'] = cyrillic_ratio / 2
+            
+        logger.info(f"[LANG_DETECT] Dominant: {dominant_lang}, Dist: {distribution}")
+        return dominant_lang, distribution
     
     def _find_section_positions(self, text: str) -> List[Tuple[int, int, SectionType, str]]:
         """Find positions of all sections in text."""
