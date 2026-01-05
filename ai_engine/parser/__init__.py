@@ -231,7 +231,9 @@ class ContractParser:
             r"(?i)(\d{1,3}[\s]*(?:\d{3}[\s]*)*(?:\d{1,3})?)\s*(?:so['']m|so[''`]?m|сум|сўм|UZS|USD|EUR|RUB|₽|\$)",
             # Common abbreviations
             r"(?i)jami\s*[:=]?\s*(\d[\d\s]*[\.,]?\d*)",
-            r"(?i)итого\s*[:=]?\s*(\d[\d\s]*[\.,]?\d*)",
+            r"(?i)(?:umumiy\s+qiymati|jami\s+qiymati|to\'liq\s+qiymati)\s*[:=—-]?\s*(\d[\d\s\.,]*\d?)",
+            r"(?i)(?:итого|Итого)\s*[:=]?\s*(\d[\d\s]*[\.,]?\d*)",
+            r"(?i)(?:общая\s+сумма\s+договора|сумма\s+договора)\s*[:=—-]?\s*(\d[\d\s\.,]*\d?)",
             r"(?i)(\d[\d\s]*[\.,]?\d*)\s*(?:uzs|usd|eur|rub)",
             r"(?i)(?:shartnoma\s+summasi|shartnoma\s+narxi|shartnoma\s+bo'yicha\s+ishlar\s+qiymati|jami)\s*[:=]?\s*(\d[\d\s]*[\.,]?\d*)",
         ],
@@ -687,14 +689,14 @@ class ContractParser:
                 skip_small = False
                 try:
                     amount_val_float = float(amount_clean.replace(',', '.'))
-                    if amount_val_float < 100000:
+                    if amount_val_float < 50000:
                         skip_small = True
                 except Exception:
                     # Fallback: digits-only compare
                     digits_only = re.sub(r'[^0-9]', '', amount_raw)
                     if digits_only and digits_only.isdigit():
                         try:
-                            if int(digits_only) < 100000:
+                            if int(digits_only) < 50000:
                                 skip_small = True
                         except Exception:
                             pass
@@ -718,8 +720,11 @@ class ContractParser:
                         normalized_numeric = re.sub(r'[^0-9]', '', amount_raw)
 
                 logger_local.info(f"[AMOUNT_EXTRACT] Found: '{amount_raw[:50]}...' -> '{normalized_numeric}'")
-                metadata.total_amount = normalized_numeric
-                break
+                # Faqat eng katta sonni saqlash
+                if not metadata.total_amount or int(normalized_numeric) > int(metadata.total_amount):
+                    metadata.total_amount = normalized_numeric
+                    logger_local.info(f"[AMOUNT_EXTRACT] Updated to larger amount: {normalized_numeric}")
+                # Break emas, barcha patternlarni tekshiramiz
         
         # Fallback: If amount not found in header, search for formatted currency amounts (e.g., "5 600 000 000")
         if not metadata.total_amount:
@@ -743,9 +748,9 @@ class ContractParser:
                             parsed = float(amount_clean.replace(',', '.'))
                             normalized_numeric = str(int(round(parsed)))
                             if int(normalized_numeric) >= 100000:
-                                metadata.total_amount = normalized_numeric
-                                logger_local.info(f"[AMOUNT_EXTRACT] Stored fallback amount: '{normalized_numeric}'")
-                                break
+                                if not metadata.total_amount or int(normalized_numeric) > int(metadata.total_amount):
+                                    metadata.total_amount = normalized_numeric
+                                    logger_local.info(f"[AMOUNT_EXTRACT] Updated fallback to larger amount: '{normalized_numeric}'")
                         except Exception as e:
                             logger_local.info(f"[AMOUNT_EXTRACT] Failed to parse: {e}")
                     if metadata.total_amount:

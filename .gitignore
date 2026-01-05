@@ -139,3 +139,19 @@ chroma_data/
 # ML Models cache
 .cache/
 models/
+
+# Node.js
+node_modules/
+frontend/dist/
+
+# Django Specific
+backend/media/
+backend/staticfiles/
+backend/logs/
+*.log
+db.sqlite3
+.env
+
+# Project Specific
+vector_store/chroma.sqlite3
+media/
