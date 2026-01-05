@@ -12,7 +12,7 @@ from typing import Optional, Tuple, List
 from pathlib import Path
 
 import pytesseract
-from PIL import Image, ImageEnhance, ImageFilter
+from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 from pdf2image import convert_from_path, convert_from_bytes
 import pdfplumber
 try:
@@ -458,20 +458,26 @@ class OCRProcessor:
         """Improved preprocessing for scanned documents."""
         # 1. Grayscale
         img = img.convert('L')
-        # 2. Increase contrast more aggressively for scanned docs
-        img = ImageEnhance.Contrast(img).enhance(2.5)
-        # 3. Sharpen
+        
+        # 2. Auto Contrast (better than fixed contrast)
+        try:
+            img = ImageOps.autocontrast(img, cutoff=2)
+        except Exception:
+            pass
+
+        # 3. Increase sharpness slightly
         img = ImageEnhance.Sharpness(img).enhance(1.5)
-        # 4. Adaptive threshold (better for varied lighting)
-        img = img.point(lambda x: 0 if x < 140 else 255, '1')
-        # 5. Noise removal (median filter)
-        img = img.filter(ImageFilter.MedianFilter(size=3))
-        # 6. Scale up small images for better recognition
+        
+        # 4. Noise removal (median filter) - only if noisy
+        # img = img.filter(ImageFilter.MedianFilter(size=3)) # Too aggressive for small text
+        
+        # 5. Scale up small images for better recognition
         width, height = img.size
         if width < 1500:
             ratio = 1500 / width
             img = img.resize((int(width * ratio), int(height * ratio)), Image.Resampling.LANCZOS)
-        # 7. Convert back to RGB for Tesseract
+            
+        # 6. Convert back to RGB for Tesseract (though L is fine, RGB is safer for some tesseract builds)
         img = img.convert('RGB')
         return img
 

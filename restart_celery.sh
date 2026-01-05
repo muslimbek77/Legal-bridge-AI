@@ -38,10 +38,10 @@ echo "Celery worker started with PID: $WORKER_PID"
 echo $WORKER_PID > /tmp/celery_worker.pid
 
 # (Ixtiyoriy) Celery beat'ni ham ishga tushirish
-# celery -A config beat -l INFO --logfile=/tmp/celery_beat.log 2>&1 &
-# BEAT_PID=$!
-# echo "Celery beat started with PID: $BEAT_PID"
-# echo $BEAT_PID > /tmp/celery_beat.pid
+celery -A config beat -l INFO --logfile=/tmp/celery_beat.log 2>&1 &
+BEAT_PID=$!
+echo "Celery beat started with PID: $BEAT_PID"
+echo $BEAT_PID > /tmp/celery_beat.pid
 
 echo "✅ Celery worker ishga tushdi!"
 echo "Loglarni ko'rish: tail -f /tmp/celery_worker.log"

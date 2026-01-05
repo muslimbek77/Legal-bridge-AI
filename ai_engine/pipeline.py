@@ -26,8 +26,10 @@ class AnalysisConfig:
     analyze_spelling: bool = True  # Imloviy xatolarni tekshirish
     use_llm: bool = True
     use_rag: bool = True
+    use_gemini: bool = False
     ocr_languages: List[str] = None
     llm_model: str = "llama3.1"
+    gemini_model: str = "gemini-flash-latest"
     
     def __post_init__(self):
         if self.ocr_languages is None:
@@ -66,10 +68,19 @@ class ContractAnalysisPipeline:
             import os
             # Check if we should use OpenAI (if Ollama is not available)
             use_openai = bool(os.environ.get('OPENAI_API_KEY'))
+            # Check if we should use Gemini
+            use_gemini = self.config.use_gemini or bool(os.environ.get('GEMINI_API_KEY'))
+            
+            # Force correct model name
+            gemini_model = "gemini-flash-latest"
+            logger.info(f"Initializing RAG with Gemini model: {gemini_model}")
+
             self._rag = LegalRAG(
                 llm_model=self.config.llm_model,
                 use_openai=use_openai,
-                openai_model="gpt-3.5-turbo"
+                openai_model="gpt-3.5-turbo",
+                use_gemini=use_gemini,
+                gemini_model=gemini_model
             )
             try:
                 self._rag.initialize()
@@ -297,7 +308,7 @@ class ContractAnalysisPipeline:
                     't_risk': round(t_risk, 3),
                     't_rag': round(t_rag, 3),
                 },
-                'model_used': self.config.llm_model,
+                'model_used': f"{self.rag.llm_type}:{self.rag.llm_model if self.rag.llm_type == 'ollama' else (self.rag.gemini_model if self.rag.llm_type == 'gemini' else self.rag.openai_model)}" if self.rag and self.rag.llm_type else "rule-based",
                 'is_valid_contract': True,
             }
             
@@ -491,6 +502,12 @@ class ContractAnalysisPipeline:
         """
         clause_analyses = {}
         
+        # SKIP LLM ANALYSIS TO SAVE QUOTA FOR SUMMARY
+        # We only have 20 requests/day on free tier.
+        # Summary is more important.
+        logger.info("Skipping structured analysis to save Gemini quota for summary.")
+        return clause_analyses
+
         # Tahlil qilish uchun asosiy bo'limlar
         key_sections = [
             SectionType.LIABILITY,      # Javobgarlik - xavfli
@@ -503,6 +520,10 @@ class ContractAnalysisPipeline:
             for section in sections:
                 if section.section_type in key_sections:
                     try:
+                        # Rate limiting for Gemini (avoid 429 errors)
+                        if self.config.use_gemini or getattr(self.rag, 'llm_type', '') == 'gemini':
+                            time.sleep(15)
+
                         # Get structured analysis from LLM
                         structured = self.rag.analyze_clause_structured(
                             section.content[:1000],
@@ -593,6 +614,10 @@ class ContractAnalysisPipeline:
         # Prefer LLM summary when enabled and RAG/OpenAI is available
         try:
             if self.config.use_llm and self.rag is not None and getattr(self.rag, 'llm_type', None):
+                # Rate limiting for Gemini
+                if getattr(self.rag, 'llm_type', '') == 'gemini':
+                    time.sleep(15)
+                    
                 llm_summary = self._generate_llm_summary(sections, metadata, issues, risk_score)
                 if llm_summary and isinstance(llm_summary, str) and len(llm_summary.strip()) > 0:
                     # Append provenance note
@@ -601,6 +626,8 @@ class ContractAnalysisPipeline:
                         llm_name = f"OpenAI ({getattr(self.rag, 'openai_model', '')})".strip()
                     elif llm_name == 'ollama':
                         llm_name = f"Ollama ({getattr(self.rag, 'llm_model', '')})".strip()
+                    elif llm_name == 'gemini':
+                        llm_name = f"Gemini ({getattr(self.rag, 'gemini_model', '')})".strip()
                     provenance = f"\n\n(LLM xulosa manbasi: {llm_name})"
                     return llm_summary + provenance
         except Exception as e:
@@ -730,24 +757,49 @@ class ContractAnalysisPipeline:
             ]
             short_crit = [f"- {i.title}" for i in crit[:3]]
 
+            # Construct contract text (truncated to avoid token limits)
+            # OpenAI GPT-3.5 has 16k context, Gemini has huge context.
+            # We'll use a safe limit of ~12000 chars (approx 3000 tokens) to leave room for response.
+            full_text = "\n\n".join([f"--- {s.title} ---\n{s.content}" for s in sections])
+            truncated_text = full_text[:12000]
+            if len(full_text) > 12000:
+                truncated_text += "\n...(davomi kesib tashlandi)..."
+
+            # Language warning
+            lang_warning = ""
+            if hasattr(metadata, 'language_distribution') and metadata.language_distribution:
+                dist = metadata.language_distribution
+                # Check if mixed
+                main_lang = max(dist, key=dist.get)
+                main_ratio = dist[main_lang]
+                
+                if main_ratio < 0.9: # If dominant language is less than 90%
+                    lang_warning = (
+                        f"\nDIQQAT: Shartnoma tili aralash bo'lishi mumkin. "
+                        f"Asosiy til: {main_lang} ({main_ratio:.0%}). "
+                        f"Boshqa tillar: {', '.join([f'{k} ({v:.0%})' for k,v in dist.items() if k != main_lang and v > 0.05])}. "
+                        "Shartnomani yagona tilda rasmiylashtirish tavsiya etiladi."
+                    )
+
             prompt = (
-                "Quyidagi ma'lumotlar asosida shartnoma tahlilining odamga yoqimli, lo'nda va amaliy xulosasini yozing. "
-                "Til: o'zbekcha (oddiy, rasmiy-neytral). Emoji va sarlavhalar moderatsiya bilan.\n\n"
-                "[Metama'lumotlar]\n" + "\n".join(meta_lines) + "\n\n" +
-                "[Ballar]\n" + "\n".join(score_block) + "\n\n" +
-                "[Muammolar soni]\n" + "\n".join(issues_block) + "\n\n" +
-                ("[Jiddiy muammolar (qisqa)]\n" + "\n".join(short_crit) + "\n\n" if short_crit else "") +
-                "Chiqish talablari:\n"
-                "- 3-6 jumladan iborat umumiy xulosa\n"
-                "- Agar jiddiy muammolar bo'lsa, 1-2 jumlada aniq tushuntiring\n"
-                "- Oxirida 2-3 amaliy tavsiya bering (bullet tarzida)\n"
-                "- Matnni o'qish oson bo'lsin, takrorlardan qoching\n"
+                "Quyidagi shartnoma matnini O'zbekiston qonunchiligi va manfaatlar muvozanati nuqtai nazaridan chuqur tahlil qiling.\n"
+                "Statistikaga emas, matnning mazmuniga e'tibor bering.\n\n"
+                f"[SHARTNOMA MATNI (Qisqartirilgan)]\n{truncated_text}\n\n"
+                "[TAHLIL MA'LUMOTLARI]\n" + "\n".join(meta_lines) + "\n" +
+                f"Topilgan texnik muammolar soni: {len(issues)}\n"
+                f"{lang_warning}\n\n"
+                "TALABLAR:\n"
+                "1. Shartnoma mohiyati: 1 gapda nima haqida ekanligini yozing.\n"
+                "2. XAVFLAR: Matn ichidan mijoz uchun eng xavfli, noaniq yoki bir tomonlama 2-3 ta aniq bandni toping va ularning oqibatini tushuntiring.\n"
+                "3. YECHIM: Ushbu xavflarni bartaraf etish uchun aniq yuridik maslahat bering.\n"
+                "4. TIL VA USLUB: Agar shartnoma tili aralash bo'lsa, buni alohida ta'kidlang va yagona tilga o'tkazishni maslahat bering. Qattiqqo'l auditor kabi yozing.\n"
             )
 
             # Use LLM without retrieval context (we just need wording)
             system_prompt = (
-                "Siz yuridik tahlil natijasini qisqa, aniq va foydalanuvchiga qulay tarzda yozadigan yordamchisiz. "
-                "Uslub: o'zbekcha, rasmiy-neytral, lo'nda."
+                "Siz tajribali yurist va auditorsiz. Sizning vazifangiz shartnomadagi yashirin xavflarni, "
+                "mijoz zarariga ishlaydigan bandlarni va yetishmayotgan himoya mexanizmlarini aniqlash. "
+                "Javobingiz lo'nda, tanqidiy va amaliy bo'lishi shart."
             )
 
             if getattr(self.rag, 'llm_type', None) == 'ollama':
@@ -771,6 +823,42 @@ class ContractAnalysisPipeline:
                     max_tokens=512,
                 )
                 return resp.choices[0].message.content
+            elif getattr(self.rag, 'llm_type', None) == 'gemini':
+                import google.generativeai as genai
+                from google.generativeai.types import HarmCategory, HarmBlockThreshold
+                try:
+                    # No sleep needed if we skipped structured analysis
+                    # time.sleep(15) 
+                    
+                    # Create model with system instruction
+                    model = genai.GenerativeModel(
+                        self.rag.gemini_model,
+                        system_instruction=system_prompt
+                    )
+                    
+                    resp = model.generate_content(
+                        prompt,
+                        generation_config=dict(
+                            temperature=0.2,
+                            max_output_tokens=2048,
+                        ),
+                        safety_settings={
+                            HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                            HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                            HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+                            HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+                        }
+                    )
+                    if resp.parts:
+                        return resp.text
+                    else:
+                        logger.warning(f"Gemini blocked response. Feedback: {resp.prompt_feedback}")
+                        if resp.candidates and resp.candidates[0].content.parts:
+                             return resp.candidates[0].content.parts[0].text
+                        return "Xulosa yaratishda xatolik: AI xavfsizlik filtri tomonidan bloklandi."
+                except Exception as e:
+                    logger.error(f"Gemini generation error: {e}")
+                    return ""
             return ""
         except Exception as e:
             logger.warning(f"LLM summary error: {e}")

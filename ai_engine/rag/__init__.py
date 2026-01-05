@@ -29,6 +29,8 @@ class LegalRAG:
         llm_base_url: str = "http://localhost:11434",
         use_openai: bool = False,
         openai_model: str = "gpt-3.5-turbo",
+        use_gemini: bool = False,
+        gemini_model: str = "gemini-flash-latest",
         collection_name: str = "legal_documents"
     ):
         """
@@ -41,6 +43,8 @@ class LegalRAG:
             llm_base_url: Ollama server URL
             use_openai: Force using OpenAI instead of Ollama
             openai_model: OpenAI model to use
+            use_gemini: Force using Gemini instead of Ollama/OpenAI
+            gemini_model: Gemini model to use
         """
         self.vector_store_path = Path(vector_store_path)
         self.embedding_model_name = embedding_model
@@ -48,6 +52,8 @@ class LegalRAG:
         self.llm_base_url = llm_base_url
         self.use_openai = use_openai
         self.openai_model = openai_model
+        self.use_gemini = use_gemini
+        self.gemini_model = gemini_model
         self.collection_name = os.environ.get("CHROMA_COLLECTION", collection_name)
         self.tenant = os.environ.get("CHROMA_TENANT", "default_tenant")
         
@@ -56,7 +62,8 @@ class LegalRAG:
         self.llm = None
         self.llm_client = None
         self.openai_client = None
-        self.llm_type = None  # 'ollama', 'openai', or None
+        self.gemini_client = None
+        self.llm_type = None  # 'ollama', 'openai', 'gemini', or None
         
         self._initialized = False
     
@@ -106,26 +113,36 @@ class LegalRAG:
             raise
     
     def _initialize_llm(self):
-        """Initialize LLM backend - Ollama or OpenAI."""
+        """Initialize LLM backend - Gemini, OpenAI, or Ollama."""
         
-        # If force OpenAI, skip Ollama
-        if not self.use_openai:
-            # Try Ollama first
+        # 1. Try Gemini if configured or key exists
+        gemini_api_key = os.environ.get('GEMINI_API_KEY')
+        if self.use_gemini or (gemini_api_key and not self.use_openai):
             try:
-                import ollama
-                self.llm_client = ollama.Client(host=self.llm_base_url)
-                # Test connection
-                self.llm_client.list()
-                self.llm_type = 'ollama'
-                logger.info(f"Ollama initialized at {self.llm_base_url}")
-                return
+                import google.generativeai as genai
+                if not gemini_api_key:
+                    logger.warning("Gemini API key not found in environment variables")
+                else:
+                    genai.configure(api_key=gemini_api_key)
+                    self.gemini_client = genai.GenerativeModel(self.gemini_model)
+                    
+                    # Test generation to ensure it works (check for quota/auth issues)
+                    try:
+                        self.gemini_client.generate_content("Test")
+                    except Exception as e:
+                        logger.warning(f"Gemini initialized but failed test generation: {e}")
+                        raise e
+                        
+                    self.llm_type = 'gemini'
+                    logger.info(f"Gemini initialized with model {self.gemini_model}")
+                    return
             except Exception as e:
-                logger.warning(f"Could not initialize Ollama: {e}")
-                self.llm_client = None
-        
-        # Try OpenAI as fallback
+                logger.warning(f"Could not initialize Gemini: {e}")
+                self.gemini_client = None
+
+        # 2. Try OpenAI if configured or key exists
         openai_api_key = os.environ.get('OPENAI_API_KEY')
-        if openai_api_key:
+        if self.use_openai or openai_api_key:
             try:
                 from openai import OpenAI
                 self.openai_client = OpenAI(api_key=openai_api_key)
@@ -136,9 +153,22 @@ class LegalRAG:
                 logger.warning(f"Could not initialize OpenAI: {e}")
                 self.openai_client = None
         
+        # 3. Try Ollama as fallback
+        try:
+            import ollama
+            self.llm_client = ollama.Client(host=self.llm_base_url)
+            # Test connection
+            self.llm_client.list()
+            self.llm_type = 'ollama'
+            logger.info(f"Ollama initialized at {self.llm_base_url}")
+            return
+        except Exception as e:
+            logger.warning(f"Could not initialize Ollama: {e}")
+            self.llm_client = None
+        
         # No LLM available
         self.llm_type = None
-        logger.warning("No LLM backend available (neither Ollama nor OpenAI)")
+        logger.warning("No LLM backend available (neither Gemini, OpenAI nor Ollama)")
     
     def add_documents(self, documents: List[Dict]) -> int:
         """
@@ -263,12 +293,19 @@ class LegalRAG:
         
         # Default system prompt
         if not system_prompt:
-            system_prompt = """Siz O'zbekiston Respublikasi qonunchiligi bo'yicha ekspert yuridik yordamchisiz.
+            system_prompt = """Siz O'zbekiston Respublikasi qonunchiligi bo'yicha tajribali yurist va auditorisiz.
+Sizning vazifangiz shartnoma matnini chuqur tahlil qilish va yashirin xavflarni aniqlashdir.
+
 Javobni quyidagi talablarga qat'iy rioya qilgan holda bering:
-- Faqat kontekstdagi qonun moddalariga tayangan holda xulosa qiling
-- Aniq, lo'nda va amaliy tavsiyalar bering
-- Noma'lum bo'lsa: "Aniq ma'lumot yetarli emas" deb yozing
-- Tuzilishi: 1) Moslik 2) Xavflar 3) Tavsiya 4) Zarur o'zgartirish matni"""
+1. Tanqidiy yondashuv: Shartnomaning har bir bandini shubha ostiga oling.
+2. Aniq xavflar: "Umumiy xavf bor" demang, aynan qaysi band va qanday oqibatga olib kelishini yozing (jarima, sud, zarar).
+3. Qonuniy asos: Kontekstdagi qonun moddalariga havola bering.
+4. Tuzilishi:
+   - 🔴 Xavfli bandlar: (Band matni va nima uchun xavfli ekanligi)
+   - ⚠️ Yetishmayotgan qismlar: (Shartnomada nima yo'q va bu nima uchun yomon)
+   - ✅ Tavsiya: (Aniq yuridik maslahat va o'zgartirish matni)
+
+Agar shartnoma mukammal bo'lsa ham, kelajakda yuzaga kelishi mumkin bo'lgan kamida 2 ta potensial xavfni ko'rsating."""
         
         # Build prompt
         full_prompt = f"""KONTEKST (Tegishli qonun moddalari):
@@ -279,7 +316,33 @@ SAVOL: {query}
 JAVOB:"""
         
         try:
-            if self.llm_type == 'ollama':
+            if self.llm_type == 'gemini':
+                # Use Gemini
+                import google.generativeai as genai
+                from google.generativeai.types import HarmCategory, HarmBlockThreshold
+                
+                # Create model with system instruction for better adherence
+                model = genai.GenerativeModel(
+                    self.gemini_model,
+                    system_instruction=system_prompt
+                )
+                
+                response = model.generate_content(
+                    full_prompt,
+                    generation_config=dict(
+                        temperature=0.1,
+                        max_output_tokens=4096,
+                    ),
+                    safety_settings={
+                        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+                        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+                    }
+                )
+                return response.text
+
+            elif self.llm_type == 'ollama':
                 # Use Ollama
                 response = self.llm_client.chat(
                     model=self.llm_model,
@@ -289,7 +352,7 @@ JAVOB:"""
                     ],
                     options={
                         "temperature": 0.1,
-                        "num_predict": 1024,
+                        "num_predict": 4096,
                     }
                 )
                 return response['message']['content']
@@ -303,7 +366,7 @@ JAVOB:"""
                         {"role": "user", "content": full_prompt}
                     ],
                     temperature=0.1,
-                    max_tokens=1024,
+                    max_tokens=4096,
                 )
                 return response.choices[0].message.content
             
@@ -329,16 +392,16 @@ JAVOB:"""
         relevant_laws = self.search_laws(clause_text, contract_type)
         
         # Generate analysis
-        analysis_prompt = f"""Quyidagi shartnoma bandini O'zbekiston qonunchiligi nuqtai nazaridan tahlil qiling.
+        analysis_prompt = f"""Quyidagi shartnoma bandini O'zbekiston qonunchiligi nuqtai nazaridan tanqidiy tahlil qiling.
 
     BAND:
     {clause_text}
 
     Talab qilinadigan chiqish:
-    1) Moslik: qisqa baho (mos/mos emas) va izoh
-    2) Xavflar: 2-4 punkt, aniq ifoda
-    3) Tavsiya: 1-3 aniq tavsiya
-    4) O'zgartirish matni: zarur bo'lsa, taklif etilgan band matni"""
+    1) Moslik: (Mos/Qisman mos/Mos emas) - Aniq yuridik baho.
+    2) Xavflar: Ushbu band qanday salbiy oqibatlarga olib kelishi mumkin? (Kamida 2 ta aniq xavf).
+    3) Tavsiya: Yuridik jihatdan himoyalangan variantni taklif qiling.
+    4) O'zgartirish matni: Bandning yangi, xavfsiz tahriri."""
         
         analysis = self.generate_response(analysis_prompt, relevant_laws)
         
@@ -406,6 +469,9 @@ JAVOB:"""
         try:
             if not self._initialized:
                 self.initialize()
+            
+            logger.info(f"Structured Analysis - LLM Type: {self.llm_type}")
+            
             if not self.llm_type:
                 # Should not happen due to early fallback, but guard anyway
                 return {
@@ -437,6 +503,42 @@ JAVOB:"""
                     options={"temperature": 0.1, "num_predict": 768},
                 )
                 content = response['message']['content']
+            elif self.llm_type == 'gemini':
+                import time
+                import google.generativeai as genai
+                from google.generativeai.types import HarmCategory, HarmBlockThreshold
+                
+                # Create model with system instruction
+                model = genai.GenerativeModel(
+                    self.gemini_model,
+                    system_instruction=system_prompt
+                )
+                
+                max_retries = 3
+                for attempt in range(max_retries):
+                    try:
+                        response = model.generate_content(
+                            user_content,
+                            generation_config=dict(
+                                temperature=0.1,
+                                max_output_tokens=768,
+                            ),
+                            safety_settings={
+                                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+                                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+                            }
+                        )
+                        content = response.text
+                        break
+                    except Exception as e:
+                        if "429" in str(e) and attempt < max_retries - 1:
+                            wait_time = (attempt + 1) * 20  # 20s, 40s, 60s
+                            logger.warning(f"Gemini 429 error, retrying in {wait_time}s...")
+                            time.sleep(wait_time)
+                        else:
+                            raise e
             else:
                 response = self.openai_client.chat.completions.create(
                     model=self.openai_model,
