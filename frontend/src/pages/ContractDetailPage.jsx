@@ -108,8 +108,7 @@ export default function ContractDetailPage() {
   }
   // console.log("contract", contract);
   // console.log("displayContract", displayContract);
-  // console.log("displayAnalysis", displayAnalysis);
-  // console.log("displayAnalysis", displayAnalysis);
+  console.log("displayAnalysis", displayAnalysis);
   // console.log("analysisData", analysisData?.results);
 
   if (contractError || !displayContract) {
