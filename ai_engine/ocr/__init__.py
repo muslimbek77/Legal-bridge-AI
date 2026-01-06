@@ -33,8 +33,8 @@ class OCRProcessor:
     
     # Language codes for Tesseract
     LANGUAGE_MAP = {
-        'uz-latn': 'uzb_latn',  # Uzbek Latin
-        'uz-cyrl': 'uzb',       # Uzbek Cyrillic
+        'uz-latn': 'uzb',       # Uzbek Latin - usually 'uzb' or 'uzb_latn'
+        'uz-cyrl': 'uzb_cyrl',  # Uzbek Cyrillic - SPECIFIC
         'ru': 'rus',            # Russian
         'eng': 'eng',           # English
     }
@@ -47,7 +47,8 @@ class OCRProcessor:
             languages: List of language codes to use for OCR
         """
         os.environ.setdefault('TESSDATA_PREFIX', self.DEFAULT_TESSDATA)
-        self.languages = self._build_language_list(languages or ['uzb', 'uzb_latn', 'rus'])
+        # Default prioritize: Uzbek Cyrillic -> Uzbek -> Russian -> English
+        self.languages = self._build_language_list(languages or ['uzb_cyrl', 'uzb', 'rus', 'eng'])
         self.tesseract_lang = '+'.join(self.languages)
         # Env-driven configs
         try:
@@ -521,8 +522,73 @@ class OCRProcessor:
         """Normalize unicode (reduce ligatures) and collapse excessive spaces."""
         if not text:
             return text
-        # Normalize ligatures and compatibility forms
+
+        # 1. Basic cleaning
         norm = unicodedata.normalize('NFKC', text)
+        
+        # 2. Hardcoded fixes for very common OCR artifacts in Uzbek Cyrillic
+        replacements = {
+            'Г‘': 'Ғ', "O'": "Ў", "O`": "Ў", "O‘": "Ў",
+            'г‘': 'ғ', "o'": "ў", "o`": "ў", "o‘": "ў",
+            '¥': 'Ұ', '£': 'Ғ', # Pound sign sometimes misread as Gh
+        }
+        for old, new in replacements.items():
+            norm = norm.replace(old, new)
+
+        import re
+        
+        # 3. Context-aware substitutions using Regex
+        # We process token by token or use lookarounds to ensure we are inside Cyrillic words.
+        
+        # Helper pattern for Cyrillic context (surrounded by Cyrillic letters)
+        # We include common Uzbek Cyrillic chars: а-яА-ЯёЁўқғҳ
+        cyr = r'[а-яА-ЯёЁўқғҳ]'
+        
+        # Fix: Latin 'Y' -> 'Ў' (capital) or 'у' (small) inside Cyrillic words
+        # "Yзбекистон" -> "Ўзбекистон"
+        norm = re.sub(rf'\bY(?={cyr})', 'Ў', norm)
+        # "худYд" -> "худуд" (Y inside is usually u)
+        norm = re.sub(rf'(?<={cyr})Y(?={cyr})', 'у', norm)
+
+        # Fix: Latin 'h' -> 'ҳ' (sh) inside Cyrillic context
+        # "шаhар" -> "шаҳар", "hам" -> "ҳам"
+        norm = re.sub(rf'\bh(?={cyr})', 'ҳ', norm)
+        norm = re.sub(rf'(?<={cyr})h(?={cyr})', 'ҳ', norm)
+        # Also 'H' -> 'Ҳ' if it looks like start of word or inside
+        norm = re.sub(rf'\bH(?={cyr})', 'Ҳ', norm)
+        norm = re.sub(rf'(?<={cyr})H(?={cyr})', 'Ҳ', norm)
+
+        # Fix: '3' -> 'З' inside Cyrillic words (e.g. "Ў3БЕКИСТОН")
+        norm = re.sub(rf'(?<={cyr})3(?={cyr})', 'З', norm)
+        norm = re.sub(rf'\b3(?={cyr})', 'З', norm)
+        
+        # Fix: '0' -> 'О' inside Cyrillic words ("Т0ШКЕНТ")
+        norm = re.sub(rf'(?<={cyr})0(?={cyr})', 'О', norm)
+
+        # Fix: '6' -> 'б' inside Cyrillic words ("кито6")
+        norm = re.sub(rf'(?<={cyr})6(?={cyr})', 'б', norm)
+        
+        # 4. Homoglyph cleanup (Latin chars that look like Cyrillic)
+        # Tesseract often outputs Latin A, B, C, E, H, K, M, O, P, T, X in Cyrillic text.
+        # We replace them if they are surrounded by Cyrillic.
+        # Map: Latin -> Cyrillic
+        homoglyphs = {
+            'A': 'А', 'B': 'В', 'C': 'С', 'E': 'Е', 'H': 'Н', 'K': 'К', 
+            'M': 'М', 'O': 'О', 'P': 'Р', 'T': 'Т', 'X': 'Х',
+            'a': 'а', 'c': 'с', 'e': 'е', 'o': 'о', 'p': 'р', 'x': 'х', 'y': 'у'
+        }
+        # Note: 'H' is tricky. It could be 'Ҳ' or 'Н'. 
+        # Above I prioritized H->Ҳ for Uzbek specific contexts. 
+        # But 'Н' (En) is visually identical to 'H'. 
+        # If the word is "ТОШКЕНТ", H is N. If "ҲАММА", H is H.
+        # Safe bet: If we already ran the H->Ҳ rules above, leftovers might be N.
+        # But visually H=Н is much more common in "caps lock" scenarios.
+        # Let's simple apply H->Н in the homoglyph map for remaining cases.
+        
+        for lat, cyrillic_char in homoglyphs.items():
+            # Replace Latin char if surrounded by Cyrillic
+            norm = re.sub(rf'(?<={cyr}){lat}(?={cyr})', cyrillic_char, norm)
+
         # Collapse multiple spaces
         norm = ' '.join(norm.split())
         return norm
