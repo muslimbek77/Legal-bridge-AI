@@ -72,7 +72,9 @@ class ContractAnalysisPipeline:
             use_gemini = self.config.use_gemini or bool(os.environ.get('GEMINI_API_KEY'))
             
             # Force correct model name
-            gemini_model = "gemini-flash-latest"
+            # gemini-flash-latest can be unstable or point to experimental versions with low quotas.
+            # gemini-1.5-flash is stable and has higher free tier limits.
+            gemini_model = "gemini-1.5-flash"
             logger.info(f"Initializing RAG with Gemini model: {gemini_model}")
 
             self._rag = LegalRAG(
