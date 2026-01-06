@@ -323,21 +323,27 @@ class ContractParser:
             cyr_ratio = (cyr_letters / total_letters) if total_letters else 0
             if cyr_ratio >= 0.6:
                 # Map Latin lookalikes to Cyrillic to fix headers like "ШАРТНОМA" → "ШАРТНОМА"
-                latin_to_cyr = {
-                    'A': 'А', 'a': 'а',
-                    'B': 'В', 'b': 'в',
-                    'E': 'Е', 'e': 'е',
-                    'K': 'К', 'k': 'к',
-                    'M': 'М', 'm': 'м',
-                    'H': 'Н', 'h': 'н',
-                    'O': 'О', 'o': 'о',
-                    'P': 'Р', 'p': 'р',
-                    'C': 'С', 'c': 'с',
-                    'T': 'Т', 't': 'т',
-                    'X': 'Х', 'x': 'х',
-                    'Y': 'У', 'y': 'у',  # careful but helps for full-uppercase headings
+                # Use regex to replace only if inside Cyrillic context to avoid breaking English words
+                # import re (Module-level import used instead)
+                cyr = r'[а-яА-ЯёЁўқғҳ]'
+                
+                latin_to_cyr_map = {
+                    'A': 'А', 'a': 'а', 'B': 'В', 'b': 'в', 'E': 'Е', 'e': 'е',
+                    'K': 'К', 'k': 'к', 'M': 'М', 'm': 'м', 'H': 'Н', 'h': 'н',
+                    'O': 'О', 'o': 'о', 'P': 'Р', 'p': 'р', 'C': 'С', 'c': 'с',
+                    'T': 'Т', 't': 'т', 'X': 'Х', 'x': 'х', 'Y': 'У', 'y': 'у'
                 }
-                text = ''.join(latin_to_cyr.get(ch, ch) for ch in text)
+                
+                # Protect specific common words/acronyms if needed, or just rely on context
+                # Iterate and replace carefully using regex
+                for lat, cyrillic_char in latin_to_cyr_map.items():
+                    # Replace only if surrounded by Cyrillic (e.g. "ШАРТНОМA")
+                    # Lookbehind and lookahead for Cyrillic check
+                    text = re.sub(rf'(?<={cyr}){lat}(?={cyr})', cyrillic_char, text)
+                    if lat.isupper():
+                        # Also handle end of word if word starts with Cyrillic (e.g. "ШАРТНОМA ")
+                        text = re.sub(rf'(?<={cyr}){lat}\b', cyrillic_char, text)
+
         except Exception:
             # If anything goes wrong, keep original text
             pass

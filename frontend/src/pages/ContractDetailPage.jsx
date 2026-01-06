@@ -249,24 +249,23 @@ export default function ContractDetailPage() {
               return null;
             })()}
 
-          {uiStatus !== "completed" && (
-            <button
-              onClick={() => analyzeMutation.mutate()}
-              disabled={uiStatus === "in_progress" || analyzeMutation.isPending}
-              className={`btn-primary ${
-                uiStatus === "in_progress"
-                  ? "opacity-60 cursor-not-allowed"
-                  : ""
+          {/* Analyze / Re-analyze button */}
+          <button
+            onClick={() => analyzeMutation.mutate()}
+            disabled={uiStatus === "in_progress" || analyzeMutation.isPending}
+            className={`btn-primary ${
+              uiStatus === "in_progress"
+                ? "opacity-60 cursor-not-allowed"
+                : ""
+            }`}
+          >
+            <ArrowPathIcon
+              className={`h-5 w-5 mr-2 ${
+                analyzeMutation.isPending ? "animate-spin" : ""
               }`}
-            >
-              <ArrowPathIcon
-                className={`h-5 w-5 mr-2 ${
-                  analyzeMutation.isPending ? "animate-spin" : ""
-                }`}
-              />
-              Tahlil qilish
-            </button>
-          )}
+            />
+            {uiStatus === "completed" ? "Qayta tahlil" : "Tahlil qilish"}
+          </button>
 
           <div className="relative">
             {uiStatus === "completed" && (

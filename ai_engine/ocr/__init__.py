@@ -158,7 +158,13 @@ class OCRProcessor:
                     import json
                     with open(cache_file, 'r', encoding='utf-8') as f:
                         data = json.load(f)
-                    return data.get('text', ''), float(data.get('confidence', 1.0)), bool(data.get('is_scanned', False))
+                    
+                    # Apply normalization even to cached text to ensure new fixes (like H->Н, k->q) are applied
+                    # without re-running expensive OCR
+                    cached_text = data.get('text', '')
+                    norm_text = self._normalize_text(cached_text)
+                    
+                    return norm_text, float(data.get('confidence', 1.0)), bool(data.get('is_scanned', False))
                 except Exception:
                     pass
         extension = file_path.suffix.lower()
@@ -588,6 +594,156 @@ class OCRProcessor:
         for lat, cyrillic_char in homoglyphs.items():
             # Replace Latin char if surrounded by Cyrillic
             norm = re.sub(rf'(?<={cyr}){lat}(?={cyr})', cyrillic_char, norm)
+            
+        # 5. Fix common whole-word misreadings (Dictionary Restoration)
+        # These are patterns where one letter is consistently wrong in Uzbek Cyrillic OCR
+        # e.g. 'рахбар' -> 'раҳбар', 'курилиш' -> 'қурилиш'
+        # We use word boundaries \b to be safe.
+        
+        common_fixes = {
+            # H vs X (Comprehensive List)
+            r'\bрахбар': 'раҳбар', # partial match allowed for suffixes
+            r'\bРахбар': 'Раҳбар',
+            r'\bРАХБАР': 'РАҲБАР',
+            r'\bхамда\b': 'ҳамда', 
+            r'\bхужжат': 'ҳужжат',
+            r'\bшахри': 'шаҳри',
+            r'\bшахар': 'шаҳар',
+            r'\bхолат': 'ҳолат',
+            r'\bхисоб': 'ҳисоб',
+            r'\bахамият': 'аҳамият',
+            r'\bмахкама': 'маҳкама',
+            r'\bгувохнома': 'гувоҳнома',
+            r'\bмухандис': 'муҳандис', 
+            r'\bхудуд': 'ҳудуд',
+            r'\bхуқуқ': 'ҳуқуқ',
+            r'\bхажм': 'ҳажм', 
+            r'\bхаракат': 'ҳаракат',
+            r'\bхузур': 'ҳузур',
+            r'\bхамкор': 'ҳамкор',
+            r'\bхимоя': 'ҳимоя',
+            r'\bхар\b': 'ҳар', 
+            r'\bхамма': 'ҳамма',
+            r'\bхабар': 'хабар', # Correct
+            r'\bхавф': 'хавф', # Correct
+
+            # H vs X Endings/Middles
+            r'мохияти': 'моҳияти',
+            r'бахоси': 'баҳоси',
+            r'ахоли': 'аҳоли', 
+            r'шахс': 'шахс', # Correct
+            
+            # K vs Q (Comprehensive List using roots)
+            # We match start of word mostly
+            r'\bкурилиш': 'қурилиш',
+            r'\bКУРИЛИШ': 'ҚУРИЛИШ',
+            r'\bкурил': 'қурил', # root for kurilgan -> qurilgan
+            r'\bкабул': 'қабул',
+            r'\bкил': 'қил', 
+            r'\bкилиш': 'қилиш',
+            r'\bкилиб': 'қилиб',
+            r'\bкилин': 'қилин',
+            r'\bкиймат': 'қиймат',
+            r'\bкисм': 'қисм',
+            r'\bкисқа': 'қисқа',
+            r'\bконун': 'қонун',
+            r'\bкоида': 'қоида',
+            r'\bкушимча': 'қўшимча', # k -> q + u -> o'
+            r'\bкарши': 'қарши',
+            r'\bкатнаш': 'қатнаш',
+            r'\bкатъий': 'қатъий',
+            r'\bкарор': 'қарор',
+            r'\bкайта': 'қайта',
+            r'\bкишлок': 'қишлоқ',
+            r'\bкувват': 'қувват',
+            r'\bкушимча': 'қўшимча',
+            r'\bкуйидаги': 'қуйидаги',
+            r'\bкуйида': 'қуйида',
+            r'\bкурсат': 'кўрсат', # u -> o'
+            r'\bкучига': 'кучига', # Correct (kuch)
+            r'\bкириш': 'кириш', # Correct (enter)
+            r'\bкерак': 'керак', # Correct 
+            r'\bкелишув': 'келишув', # Correct
+            r'\bконтрак': 'контракт', # Typo fix
+            r'\bчик': 'чиқ', # chiqing -> chiqing
+            r'\bаник': 'аниқ',
+            r'\bнукта': 'нуқта',
+            r'\bбошка': 'бошқа',
+
+            # Additions from bulk analysis
+            r'\bмувофик': 'мувофиқ',
+            r'\bтулик': 'тўлиқ',
+            r'\bнуксон': 'нуқсон',
+            r'\bбоглик': 'боғлиқ',
+            r'\bхукук': 'ҳуқуқ',
+            r'\bкидирув': 'қидирув',
+            r'\bколдириш': 'қолдириш',
+            r'\bкулай': 'қулай',
+            r'\bкуллаш': 'қўллаш',
+            r'\bкушма': 'қўшма',
+            r'\bкушни': 'қўшни',
+            r'\bкуйилган': 'қўйилган',
+            r'\bкурсатиш': 'кўрсатиш',
+            r'\bкурсатма': 'кўрсатма',
+            r'\bкурган': 'кўрган',
+            r'\bкуриб': 'кўриб',
+            r'\bйигиш': 'йиғиш',
+            r'\bкогоз': 'қоғоз',
+            r'\bузбекистон': 'Ўзбекистон',
+            r'\bуз\b': 'ўз', 
+
+            # U vs O' (Map to Cyrillic Ў)
+            r'\bузи': 'ўзи',
+            r'\bуз\b': 'ўз', 
+            r'\bУз\b': 'Ўз',
+            r'\bурни': 'ўрни',
+            r'\bурта': 'ўрта',
+            r'\bукув': 'ўқув',
+            r'\bутказ': 'ўтказ',
+            r'\bузгар': 'ўзгар',
+            r'\bбулган': 'бўлган',
+            r'\bбулади': 'бўлади',
+            r'\bбулиш': 'бўлиш',
+            r'\bбуйича': 'бўйича',
+            r'\bбулим': 'бўлим',
+            r'\bтулов': 'тўлов',
+            r'\bтулаш': 'тўлаш',
+            r'\bТулов': 'Тўлов',
+            r'\bтугри': 'тўғри',
+            r'\bтула': 'тўла',
+            r'\bурин': 'ўрин',
+            r'\bутиш': 'ўтиш',
+            r'\bузаро': 'ўзаро',
+            r'\bузок': 'узоқ', # u correct, k->q
+            r'\bхудуд': 'ҳудуд', # u correct
+            r'\bмуддат': 'муддат', # u correct
+            r'\bшунингдек': 'шунингдек', # u correct
+            r'\bучун': 'учун', # u correct
+            r'\bушбу': 'ушбу', # u correct
+            r'\bуттиз': 'ўттиз',
+
+            # Specific Phrases/Typos
+            r'\bРеспубликсининг\b': 'Республикасининг',
+            r'\bиншооатлар': 'иншоотлар',
+            r'\bавтомобиль иулларини\b': 'автомобиль йўлларини',
+            r'\bиуллари': 'йўллари',
+            r'\bиул\b': 'йўл',
+            r'\bйул\b': 'йўл',
+            r'\bтраспорт\b': 'транспорт',
+            r'\bфилилали\b': 'филиали',
+            r'\bйигим': 'йиғим',
+            r'\bмунтаззам': 'мунтазам',
+            r'\bмикдор': 'миқдор',
+            r'\bвактида': 'вақтида',
+            r'\bвактинча': 'вақтинча',
+            r'\bвақтинча': 'вақтинча',
+            r'\bвакт': 'вақт',
+            r'\bтакдим': 'тақдим',
+            r'\bспецификацияларга': 'спецификацияларга', 
+        }
+        
+        for pattern, replacement in common_fixes.items():
+            norm = re.sub(pattern, replacement, norm, flags=re.IGNORECASE)
 
         # Collapse multiple spaces
         norm = ' '.join(norm.split())
