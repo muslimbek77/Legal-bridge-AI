@@ -44,7 +44,7 @@ class AnalysisResultListSerializer(serializers.ModelSerializer):
     
     contract_title = serializers.CharField(source='contract.title', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
-    issues_count = serializers.IntegerField(source='issues.count', read_only=True)
+    issues_count = serializers.IntegerField(read_only=True)
     
     class Meta:
         model = AnalysisResult

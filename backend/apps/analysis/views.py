@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from django.utils import timezone
+from django.db.models import Count, Q
 
 # Add ai_engine to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
@@ -53,7 +54,7 @@ class AnalysisResultViewSet(viewsets.ReadOnlyModelViewSet):
                 contract__assigned_to=user
             )
         
-        return queryset.distinct()
+        return queryset.distinct().annotate(issues_count=Count('issues'))
     
     @action(detail=False, methods=['post'])
     def analyze(self, request):
@@ -107,17 +108,25 @@ class AnalysisResultViewSet(viewsets.ReadOnlyModelViewSet):
         """Get analysis summary."""
         analysis = self.get_object()
         
-        issues_by_severity = {}
-        for severity in ComplianceIssue.Severity.choices:
-            issues_by_severity[severity[0]] = analysis.issues.filter(
-                severity=severity[0]
-            ).count()
-        
-        issues_by_type = {}
-        for issue_type in ComplianceIssue.IssueType.choices:
-            issues_by_type[issue_type[0]] = analysis.issues.filter(
-                issue_type=issue_type[0]
-            ).count()
+        issue_counts = analysis.issues.aggregate(
+            total=Count('id'),
+            **{
+                f'severity_{index}': Count('id', filter=Q(severity=value))
+                for index, (value, _) in enumerate(ComplianceIssue.Severity.choices)
+            },
+            **{
+                f'type_{index}': Count('id', filter=Q(issue_type=value))
+                for index, (value, _) in enumerate(ComplianceIssue.IssueType.choices)
+            },
+        )
+        issues_by_severity = {
+            value: issue_counts[f'severity_{index}']
+            for index, (value, _) in enumerate(ComplianceIssue.Severity.choices)
+        }
+        issues_by_type = {
+            value: issue_counts[f'type_{index}']
+            for index, (value, _) in enumerate(ComplianceIssue.IssueType.choices)
+        }
         
         return Response({
             'overall_score': analysis.overall_score,
@@ -128,7 +137,7 @@ class AnalysisResultViewSet(viewsets.ReadOnlyModelViewSet):
                 'clarity': analysis.clarity_score,
                 'balance': analysis.balance_score,
             },
-            'issues_count': analysis.issues.count(),
+            'issues_count': issue_counts['total'],
             'issues_by_severity': issues_by_severity,
             'issues_by_type': issues_by_type,
             'summary': analysis.summary,
@@ -169,15 +178,17 @@ class ComplianceIssueViewSet(viewsets.ModelViewSet):
         
         queryset = self.get_queryset()
         
-        # Severity bo'yicha
-        by_severity = {}
-        for severity in ComplianceIssue.Severity.choices:
-            by_severity[severity[0]] = queryset.filter(severity=severity[0]).count()
-        
-        # Type bo'yicha
-        by_type = {}
-        for issue_type in ComplianceIssue.IssueType.choices:
-            by_type[issue_type[0]] = queryset.filter(issue_type=issue_type[0]).count()
+        totals = queryset.aggregate(
+            total=Count('id'),
+            resolved=Count('id', filter=Q(is_resolved=True)),
+            unresolved=Count('id', filter=Q(is_resolved=False)),
+        )
+        severity_counts = queryset.values('severity').annotate(count=Count('id'))
+        by_severity = {value: 0 for value, _ in ComplianceIssue.Severity.choices}
+        by_severity.update({row['severity']: row['count'] for row in severity_counts})
+        type_counts = queryset.values('issue_type').annotate(count=Count('id'))
+        by_type = {value: 0 for value, _ in ComplianceIssue.IssueType.choices}
+        by_type.update({row['issue_type']: row['count'] for row in type_counts})
         
         # Oylik trend (so'nggi 6 oy)
         six_months_ago = datetime.now() - timedelta(days=180)
@@ -195,9 +206,9 @@ class ComplianceIssueViewSet(viewsets.ModelViewSet):
                 monthly_trend[month_name][item['severity']] = item['count']
         
         stats = {
-            'total': queryset.count(),
-            'resolved': queryset.filter(is_resolved=True).count(),
-            'unresolved': queryset.filter(is_resolved=False).count(),
+            'total': totals['total'],
+            'resolved': totals['resolved'],
+            'unresolved': totals['unresolved'],
             'by_severity': by_severity,
             'by_type': by_type,
             'monthly_trend': list(monthly_trend.values()),
@@ -280,13 +291,15 @@ def check_spelling(request):
     {
         "text": "Tekshiriladigan matn",
         "language": "uz_latin",
-        "use_ai": true  # Optional: use AI for checking
+        "use_ai": false  # Optional: set true to use AI as an additional pass
     }
     """
     try:
         text = request.data.get('text', '')
         language = request.data.get('language', 'auto')
-        use_ai = request.data.get('use_ai', True)
+        # Keep dictionary/rule-based checking as the fast, predictable default.
+        # Callers can explicitly opt into the slower local LLM pass.
+        use_ai = request.data.get('use_ai', False)
         
         if not text:
             return Response(
