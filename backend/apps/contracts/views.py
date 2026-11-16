@@ -184,7 +184,7 @@ class ContractViewSet(viewsets.ModelViewSet):
     def stats(self, request):
         """Get contract statistics for dashboard."""
         from apps.analysis.models import AnalysisResult, ComplianceIssue
-        from django.db.models import Avg, Count
+        from django.db.models import Avg, Count, Q, Prefetch
         from django.db.models.functions import TruncMonth
         from datetime import datetime, timedelta
         
@@ -200,19 +200,29 @@ class ContractViewSet(viewsets.ModelViewSet):
         else:
             queryset = Contract.objects.none()
         
-        # Asosiy statistika
-        total = queryset.count()
-        
-        # Status bo'yicha
-        by_status = {}
-        for status_choice in Contract.Status.choices:
-            by_status[status_choice[0]] = queryset.filter(status=status_choice[0]).count()
-        
+        # Status and type totals in one database query.
+        contract_counts = queryset.aggregate(
+            total=Count('id'),
+            **{
+                f'status_{index}': Count('id', filter=Q(status=value))
+                for index, (value, _) in enumerate(Contract.Status.choices)
+            },
+            **{
+                f'type_{index}': Count('id', filter=Q(contract_type=value))
+                for index, (value, _) in enumerate(Contract.ContractType.choices)
+            },
+        )
+        total = contract_counts['total']
+        by_status = {
+            value: contract_counts[f'status_{index}']
+            for index, (value, _) in enumerate(Contract.Status.choices)
+        }
+
         # Tur bo'yicha (pie chart uchun)
         by_type = []
         type_labels = dict(Contract.ContractType.choices)
-        for type_choice in Contract.ContractType.choices:
-            count = queryset.filter(contract_type=type_choice[0]).count()
+        for index, type_choice in enumerate(Contract.ContractType.choices):
+            count = contract_counts[f'type_{index}']
             if count > 0:
                 by_type.append({
                     'name': type_labels[type_choice[0]],
@@ -222,7 +232,15 @@ class ContractViewSet(viewsets.ModelViewSet):
         
         # O'rtacha risk ball va compliance
         analyses = AnalysisResult.objects.filter(contract__in=queryset, status='completed')
-        avg_risk = analyses.aggregate(avg=Avg('overall_score'))['avg'] or 0
+        analysis_stats = analyses.aggregate(
+            avg_risk=Avg('overall_score'),
+            avg_compliance=Avg('compliance_score'),
+            risk_0_25=Count('id', filter=Q(overall_score__lte=25)),
+            risk_26_50=Count('id', filter=Q(overall_score__gt=25, overall_score__lte=50)),
+            risk_51_75=Count('id', filter=Q(overall_score__gt=50, overall_score__lte=75)),
+            risk_76_100=Count('id', filter=Q(overall_score__gt=75)),
+        )
+        avg_risk = analysis_stats['avg_risk'] or 0
         
         # Kritik muammolar soni
         critical_issues = ComplianceIssue.objects.filter(
@@ -233,10 +251,10 @@ class ContractViewSet(viewsets.ModelViewSet):
         
         # Risk taqsimoti (pie chart uchun)
         risk_distribution = [
-            {'name': 'Past (0-25)', 'value': analyses.filter(overall_score__lte=25).count(), 'color': '#10B981'},
-            {'name': "O'rta (25-50)", 'value': analyses.filter(overall_score__gt=25, overall_score__lte=50).count(), 'color': '#F59E0B'},
-            {'name': 'Yuqori (50-75)', 'value': analyses.filter(overall_score__gt=50, overall_score__lte=75).count(), 'color': '#F97316'},
-            {'name': 'Kritik (75-100)', 'value': analyses.filter(overall_score__gt=75).count(), 'color': '#EF4444'},
+            {'name': 'Past (0-25)', 'value': analysis_stats['risk_0_25'], 'color': '#10B981'},
+            {'name': "O'rta (25-50)", 'value': analysis_stats['risk_26_50'], 'color': '#F59E0B'},
+            {'name': 'Yuqori (50-75)', 'value': analysis_stats['risk_51_75'], 'color': '#F97316'},
+            {'name': 'Kritik (75-100)', 'value': analysis_stats['risk_76_100'], 'color': '#EF4444'},
         ]
         
         # Oylik tahlillar (so'nggi 6 oy)
@@ -255,10 +273,18 @@ class ContractViewSet(viewsets.ModelViewSet):
                 })
         
         # So'nggi shartnomalar (risk_score bilan)
-        recent_contracts_qs = queryset.order_by('-created_at')[:5]
+        recent_contracts_qs = queryset.order_by('-created_at').prefetch_related(
+            Prefetch(
+                'analyses',
+                queryset=AnalysisResult.objects.filter(status='completed').only(
+                    'id', 'contract_id', 'overall_score', 'created_at'
+                ).order_by('-created_at')[:1],
+                to_attr='completed_analyses',
+            )
+        )[:5]
         recent_contracts = []
         for contract in recent_contracts_qs:
-            latest_analysis = contract.analyses.filter(status='completed').order_by('-created_at').first()
+            latest_analysis = contract.completed_analyses[0] if contract.completed_analyses else None
             recent_contracts.append({
                 'id': str(contract.id),
                 'title': contract.title,
@@ -270,11 +296,7 @@ class ContractViewSet(viewsets.ModelViewSet):
             })
         
         # Muvofiqlik darajasi (o'rtacha compliance_score)
-        if analyses.exists():
-            avg_compliance = analyses.aggregate(avg=Avg('compliance_score'))['avg'] or 0
-            compliance_rate = round(avg_compliance)
-        else:
-            compliance_rate = 0
+        compliance_rate = round(analysis_stats['avg_compliance'] or 0)
         
         stats = {
             'total': total,

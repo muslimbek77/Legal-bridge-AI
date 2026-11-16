@@ -17,7 +17,7 @@ def analyze_contract_task(self, contract_id: str):
     Asynchronous task for analyzing a contract.
     """
     from apps.contracts.models import Contract
-    from apps.analysis.models import AnalysisResult
+    from apps.analysis.models import AnalysisResult, ComplianceIssue
     from ai_engine.pipeline import ContractAnalysisPipeline
     
     logger.info(f"[CELERY] Task started for contract: {contract_id}")
@@ -65,9 +65,8 @@ def analyze_contract_task(self, contract_id: str):
         analysis.save()
         
         # Create compliance issues
-        from apps.analysis.models import ComplianceIssue
-        for issue_data in result.get('issues', []):
-            ComplianceIssue.objects.create(
+        issue_rows = [
+            ComplianceIssue(
                 analysis=analysis,
                 issue_type=issue_data.get('type', 'other'),
                 severity=issue_data.get('severity', 'medium'),
@@ -81,6 +80,10 @@ def analyze_contract_task(self, contract_id: str):
                 suggestion=issue_data.get('suggestion', ''),
                 suggested_text=issue_data.get('suggested_text', '')
             )
+            for issue_data in result.get('issues', [])
+        ]
+        if issue_rows:
+            ComplianceIssue.objects.bulk_create(issue_rows, batch_size=500)
         
         # Update contract status
         contract.status = Contract.Status.ANALYZED

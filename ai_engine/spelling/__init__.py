@@ -187,7 +187,6 @@ class SpellingChecker:
         'карор': 'қарор',
         'кисмида': 'қисмида',
         'кисм': 'қисм',
-        'куриш': 'қуриш',
         'килиш': 'қилиш',
         'килиб': 'қилиб',
         'килади': 'қилади',
@@ -278,7 +277,6 @@ class SpellingChecker:
         'боглик': 'боғлиқ',
         'хал': 'ҳал',
         'йули': 'йўли',
-        'ўзил': 'ўз',
         'спецификацияларга': 'спецификацияларга', # Valid
         'тугаллангунгача': 'тугаллангунгача', # Valid
         'жавобгардир': 'жавобгардир', # Valid
@@ -741,6 +739,7 @@ class SpellingChecker:
         """
         errors: List[SpellingError] = []
         seen_errors = set()
+        occurrence_counts = {}
 
         # Pre-compile regex for language detection
         cyrillic_pattern = re.compile(r'[\u0400-\u04FF]')
@@ -749,8 +748,9 @@ class SpellingChecker:
 
         def emit_error(word: str, suggestion: str, error_type: SpellingErrorType, position: int,
                        line_number: int, context: str, language: str, description: str) -> bool:
-            """Append the error unless we already reported this occurrence."""
-            key = (line_number, position, word.lower(), error_type, suggestion.lower())
+            """Report one issue per unique correction and track its frequency."""
+            key = (word.casefold(), error_type, suggestion.casefold())
+            occurrence_counts[key] = occurrence_counts.get(key, 0) + 1
             if key in seen_errors:
                 return False
             seen_errors.add(key)
@@ -765,6 +765,21 @@ class SpellingChecker:
                 description=description
             ))
             return True
+
+        apostrophe_words = {
+            'ozbekiston': "o'zbekiston", 'koprik': "ko'prik", 'bolim': "bo'lim",
+            'tolov': "to'lov", 'qoshimcha': "qo'shimcha", 'malumot': "ma'lumot",
+            'taminlash': "ta'minlash", 'boyicha': "bo'yicha", 'korsatish': "ko'rsatish",
+            'kochasi': "ko'chasi", 'orniga': "o'rniga", 'yol': "yo'l", 'soz': "so'z",
+            'togri': "to'g'ri", 'qol': "qo'l", 'oqish': "o'qish", 'organish': "o'rganish",
+            'moljal': "mo'ljal", 'kop': "ko'p", 'bosh': "bo'sh", 'som': "so'm",
+            'oz': "o'z", 'yoq': "yo'q", 'boladi': "bo'ladi", 'korinish': "ko'rinish",
+            'qoshni': "qo'shni", 'toplam': "to'plam", 'garb': "g'arb", 'garbiy': "g'arbiy",
+            'ogir': "og'ir", 'bolib': "bo'lib", 'bolgan': "bo'lgan", 'bolsa': "bo'lsa",
+            'bolishi': "bo'lishi", 'korib': "ko'rib", 'korish': "ko'rish", 'kora': "ko'ra",
+            'qolib': "qo'lib", 'qoya': "qo'ya", 'tomon': "to'mon", 'topon': "to'pon",
+            'yoriq': "yo'riq", 'yoriqnoma': "yo'riqnoma",
+        }
         
         # Split into lines for line number tracking
         lines = text.split('\n')
@@ -870,51 +885,6 @@ class SpellingChecker:
                 
                 # 4. Check for missing apostrophe in common words
                 if not error_found:
-                    apostrophe_words = {
-                        'ozbekiston': "o'zbekiston",
-                        'koprik': "ko'prik",
-                        'bolim': "bo'lim",
-                        'tolov': "to'lov",
-                        'qoshimcha': "qo'shimcha",
-                        'malumot': "ma'lumot",
-                        'taminlash': "ta'minlash",
-                        'boyicha': "bo'yicha",
-                        'korsatish': "ko'rsatish",
-                        'kochasi': "ko'chasi",
-                        'orniga': "o'rniga",
-                        'yol': "yo'l",
-                        'soz': "so'z",
-                        'togri': "to'g'ri",
-                        'qol': "qo'l",
-                        'oqish': "o'qish",
-                        'organish': "o'rganish",
-                        'moljal': "mo'ljal",
-                        'kop': "ko'p",
-                        'bosh': "bo'sh",
-                        'som': "so'm",
-                        'oz': "o'z",
-                        'yoq': "yo'q",
-                        'boladi': "bo'ladi",
-                        'korinish': "ko'rinish",
-                        'qoshni': "qo'shni",
-                        'toplam': "to'plam",
-                        'garb': "g'arb",
-                        'garbiy': "g'arbiy",
-                        'ogir': "og'ir",
-                        'bolib': "bo'lib",
-                        'bolgan': "bo'lgan",
-                        'bolsa': "bo'lsa",
-                        'bolishi': "bo'lishi",
-                        'korib': "ko'rib",
-                        'korish': "ko'rish",
-                        'kora': "ko'ra",
-                        'qolib': "qo'lib",
-                        'qoya': "qo'ya",
-                        'tomon': "to'mon",
-                        'topon': "to'pon",
-                        'yoriq': "yo'riq",
-                        'yoriqnoma': "yo'riqnoma",
-                    }
                     if word_lower in apostrophe_words:
                         suggestion = apostrophe_words[word_lower]
                         if word.isupper():
@@ -941,7 +911,16 @@ class SpellingChecker:
                     if not is_title_artifact:
                         mixed_error = self._check_mixed_script(word, line_num, position + word_pos, line, word_pos)
                         if mixed_error:
-                            errors.append(mixed_error)
+                            emit_error(
+                                word=mixed_error.word,
+                                suggestion=mixed_error.suggestion,
+                                error_type=mixed_error.error_type,
+                                position=mixed_error.position,
+                                line_number=mixed_error.line_number,
+                                context=mixed_error.context,
+                                language=mixed_error.language,
+                                description=mixed_error.description,
+                            )
                             error_found = True
 
                 # 6. External backends (Hunspell/LanguageTool) for generic typos
@@ -997,6 +976,14 @@ class SpellingChecker:
             
             position += len(line) + 1  # +1 for newline
         
+        for error in errors:
+            key = (error.word.casefold(), error.error_type, error.suggestion.casefold())
+            occurrences = occurrence_counts.get(key, 1)
+            if occurrences > 1:
+                error.description = (
+                    f"{error.description} (matnda {occurrences} marta uchraydi)"
+                )
+
         return errors
 
     def _check_external_only(self, text: str, language: str) -> List[SpellingError]:
